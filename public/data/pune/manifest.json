@@ -1,0 +1,23 @@
+{
+ "generated": "2026-10-29 13:34:16",
+ "city": "pune",
+ "mode": "descriptive",
+ "synthetic": false,
+ "files": [
+  "city.json",
+  "hexes.geojson",
+  "malls.json",
+  "opportunity.json",
+  "dynamics_summary.json",
+  "landcover_rings.json",
+  "definitions.json",
+  "malls_curated.geojson",
+  "tenant_index.json",
+  "catchment_summary.json",
+  "transit.geojson",
+  "brand_outlets.geojson",
+  "mall_sa15.geojson",
+  "exclusions.geojson",
+  "manifest.json"
+ ]
+}

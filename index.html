@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Mall Insights</title>
+  <link id="esri-theme" rel="stylesheet" href="./arcgis-assets/esri/themes/light/main.css" />
+</head>
+<body>
+  <calcite-shell id="shell">
+    <header slot="header" class="app-header">
+      <div class="brand">
+        <calcite-icon icon="shopping-cart" scale="m"></calcite-icon>
+        <div><div class="brand-title">Mall Insights</div><div class="brand-sub" id="subtitle">loading…</div></div>
+      </div>
+      <div class="header-right">
+        <calcite-chip id="mode-chip" scale="s" appearance="outline-fill" icon="information">mode</calcite-chip>
+        <calcite-select id="city-select" label-text="City" scale="s" width="auto"></calcite-select>
+        <calcite-chip id="data-chip" scale="s" icon="data" appearance="outline-fill">loading…</calcite-chip>
+        <calcite-switch id="theme-switch" label-text-end="Dark"></calcite-switch>
+      </div>
+    </header>
+    <calcite-shell-panel slot="panel-start" id="side" width="l" resizable>
+      <div class="panel-wrap">
+        <div id="banner"></div>
+        <calcite-tabs layout="inline" id="tabs">
+          <calcite-tab-nav slot="title-group" id="tab-nav"></calcite-tab-nav>
+        </calcite-tabs>
+      </div>
+    </calcite-shell-panel>
+    <div id="viewDiv"></div>
+    <div id="map-legend" class="map-legend"></div>
+  </calcite-shell>
+  <div id="tip" class="tip" role="tooltip"></div>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

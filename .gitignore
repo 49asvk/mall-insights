@@ -1,0 +1,6 @@
+node_modules
+dist
+public/calcite-assets
+public/arcgis-assets
+.env
+.env.local

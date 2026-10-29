@@ -1,0 +1,91 @@
+{
+ "slug": "hyderabad",
+ "name": "Hyderabad",
+ "country": "India",
+ "mode": "predictive",
+ "subject": null,
+ "center": [
+  78.4097,
+  17.4556
+ ],
+ "utm_epsg": 32644,
+ "years": [
+  2019,
+  2020,
+  2021,
+  2022,
+  2023,
+  2024,
+  2025
+ ],
+ "early": [
+  2019,
+  2020
+ ],
+ "late": [
+  2024,
+  2025
+ ],
+ "rings_km": [
+  1,
+  3,
+  5,
+  10
+ ],
+ "neighbour_rings": 4,
+ "horizon": 3,
+ "forecast_years": [
+  2025,
+  2028
+ ],
+ "focus": {
+  "lon": 78.4097,
+  "lat": 17.4556,
+  "label": "Hyderabad centre"
+ },
+ "synthetic": false,
+ "eligibility": {
+  "min_built": 0.2,
+  "min_pop": 1500,
+  "min_valid": 0.7
+ },
+ "candidates_rule": {
+  "min_dist_km": 1.5,
+  "min_sep_km": 3.0,
+  "top_n": 10
+ },
+ "opportunity_weights": {
+  "people": 0.2,
+  "spending": 0.1,
+  "growth_now": 0.15,
+  "growth_next": 0.15,
+  "pull": 0.1,
+  "gap": 0.2,
+  "transit": 0.1
+ },
+ "mall_weights": {
+  "A": 0.15,
+  "B": 0.2,
+  "C": 0.2,
+  "D": 0.1,
+  "E": 0.15,
+  "G": 0.05,
+  "H": 0.15
+ },
+ "weights_base": {
+  "B": 0.25,
+  "C": 0.3,
+  "D": 0.1,
+  "E": 0.25,
+  "G": 0.1
+ },
+ "weights_with_tenants": {
+  "A": 0.15,
+  "B": 0.2,
+  "C": 0.2,
+  "D": 0.1,
+  "E": 0.15,
+  "G": 0.05,
+  "H": 0.15
+ }
+}

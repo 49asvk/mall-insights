@@ -1,0 +1,23 @@
+{
+ "generated": "2026-10-30 01:39:21",
+ "city": "hyderabad",
+ "mode": "predictive",
+ "synthetic": false,
+ "files": [
+  "city.json",
+  "hexes.geojson",
+  "malls.json",
+  "opportunity.json",
+  "dynamics_summary.json",
+  "landcover_rings.json",
+  "definitions.json",
+  "malls_curated.geojson",
+  "tenant_index.json",
+  "catchment_summary.json",
+  "transit.geojson",
+  "brand_outlets.geojson",
+  "mall_sa15.geojson",
+  "exclusions.geojson",
+  "manifest.json"
+ ]
+}
