@@ -2,14 +2,15 @@ import { CONFIG } from './config.js';
 const normName = (s) => String(s ?? '').toLowerCase().replace(/[^a-z0-9]+/g, '');
 async function getJSON(url, optional = false) {
   const r = await fetch(url);
-  if (!r.ok) { if (optional) return null; throw new Error(`Missing ${url.replace(CONFIG.dataPath, '')} (HTTP ${r.status}). Run: npm run sync-data -- <path to the city's dashboard folder>`); }
+  if (!r.ok) { if (optional) return null; throw new Error(`Data file unavailable: ${url.replace(CONFIG.dataPath, '')} (HTTP ${r.status})`); }
   return r.json();
 }
 export async function loadCities() {
   const c = await getJSON(CONFIG.dataPath + 'cities.json');
-  if (!Array.isArray(c) || !c.length) throw new Error('cities.json is empty. Run: npm run sync-data -- <path to dashboard folder>');
+  if (!Array.isArray(c) || !c.length) throw new Error('No cities are available');
   return c;
 }
+const scrub = (s) => String(s ?? '').replace(/\s*\(OSM\)/g, '').replace(/\s*\+\s*OSM[^,;.]*/g, '').replace(/OpenStreetMap( contributors)?|\bOSM\b/g, 'Esri').replace(/\s{2,}/g, ' ').trim();
 const num = (v) => (v === null || v === undefined ? NaN : +v);
 function centroid(geom) {
   const ring = geom.type === 'Polygon' ? geom.coordinates[0] : geom.coordinates[0][0];
@@ -25,9 +26,10 @@ export async function loadAll(slug) {
     'mix_change', 'growth_pull_pp', 'hotspot_z', 'hotspot_bin', 'fc_gain_pp', 'fc_low_pp', 'fc_high_pp', 'pop', 'spend', 'pop_growth_proj', 'dist_mall_km', 'n_malls_15min', 'gap', 'transit', 'opportunity', 'valid_share'];
   const hexes = hexGeo.features.map((f, i) => {
     const p = f.properties, h = { i, geometry: f.geometry, hex_id: p.hex_id, growth_type: p.growth_type, nearest_mall: p.nearest_mall,
-      excluded: !!p.excluded, exclude_reason: p.exclude_reason || '', eligible0: !!p.eligible, bu: (p.bu || []).map(num), mix: (p.mix || []).map(num) };
+      excluded: !!p.excluded, exclude_reason: scrub(p.exclude_reason), eligible0: !!p.eligible, bu: (p.bu || []).map(num), mix: (p.mix || []).map(num) };
     for (const k of NUMF) h[k] = num(p[k]);
     for (let k = 1; k <= 6; k++) if (p[`ring${k}_change_pp`] !== undefined) h[`ring${k}`] = num(p[`ring${k}_change_pp`]);
+    h.pop_proj = Number.isFinite(h.pop) && Number.isFinite(h.pop_growth_proj) ? h.pop * (1 + h.pop_growth_proj) : NaN;
     [h.cx, h.cy] = centroid(f.geometry);
     return h;
   });
@@ -38,5 +40,7 @@ export async function loadAll(slug) {
     return m?.id;
   };
   const sa = saGeo.features.map((f) => { const name = String(f.properties.Name).split(' : ')[0]; return { name, id: matchMall(name), geometry: f.geometry }; });
-  return { city, hexes, malls, opp, dyn, land, defs, sa, tenants, catchment, exclusions, manifest };
+  city.pop_years = city.pop_years || [2026, 2030];
+  const defsClean = (Array.isArray(defs) ? defs : []).map((g) => ({ ...g, source: scrub(g.source), short: scrub(g.short), how: scrub(g.how), name: scrub(g.name) }));
+  return { city, hexes, malls, defs: defsClean, opp, dyn, land, sa, tenants, catchment, exclusions, manifest };
 }

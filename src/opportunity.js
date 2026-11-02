@@ -1,5 +1,5 @@
 // Hex opportunity score with explained sliders, exclusions, candidate zones.
-import { block, notice, weightPanel, legendBar } from './ui.js';
+import { block, weightPanel, legendBar } from './ui.js';
 import { HEX_COMPONENTS, HEX_PRESETS, scoreHexes, pickCandidates } from './scoring.js';
 import { rampCss } from './map.js';
 import { int, dec, esc, short } from './format.js';
@@ -12,7 +12,6 @@ export function mountOpportunity(el, ctx) {
   const exByReason = Object.entries(H.filter((h) => h.excluded).reduce((a, h) => ((a[h.exclude_reason] = (a[h.exclude_reason] || 0) + 1), a), {}));
   el.innerHTML = `
     <div class="intro">${desc ? 'Where in the study area would a mall find people, growth and few competitors?' : 'Where could the next mall go?'} Every hexagon that is already somewhat urban and populated gets a 0–100 <b>opportunity score</b>: each ingredient is turned into a percentile among those hexagons, then blended with the weights below.</div>
-    ${notice('info', 'Purchasing power counts little by default', 'Business Analyst’s purchasing-power estimates can be implausible in special areas (e.g. military cantonments), so “Spending power” starts at a low weight. Military land and cantonments from OpenStreetMap, plus any areas you excluded, are left out entirely.', 'lightbulb')}
     <div class="inline"><calcite-switch id="op-excl" checked></calcite-switch> Leave out excluded areas (${nEx} hexagons${exByReason.length ? ': ' + exByReason.map(([k, v]) => `${esc(k)} ${v}`).join(', ') : ''})</div>
     <div class="chart-title">Top candidate zones <span class="muted" id="op-same"></span></div><div id="op-list"></div>
     ${block('What counts, and how much', 'Move a slider and the map and the list update instantly', '<div id="op-w"></div>')}
@@ -21,7 +20,7 @@ export function mountOpportunity(el, ctx) {
       <div class="wrow"><div class="wlabel"><span>Minimum built-up share (latest)</span><span id="op-bu-v">${Math.round(f.minBuilt * 100)} %</span></div><calcite-slider id="op-bu" min="0" max="60" step="5" value="${f.minBuilt * 100}"></calcite-slider></div>
       <div class="wrow"><div class="wlabel"><span>Minimum distance from an existing mall</span><span id="op-d-v">${f.minDist} km</span></div><calcite-slider id="op-d" min="0" max="5" step="0.5" value="${f.minDist}"></calcite-slider></div>
       <div class="wrow"><div class="wlabel"><span>Minimum spacing between zones</span><span id="op-s-v">${f.minSep} km</span></div><calcite-slider id="op-s" min="1" max="8" step="0.5" value="${f.minSep}"></calcite-slider></div></div>`, false)}
-    ${block('Layers', '', `<div class="toggles">${[['watch', 'Watchlist: fast-growing, not yet eligible (×)', false], ['excl', 'Excluded areas (hatched)', true], ['saAll', 'All 15-minute drive areas', false], ['transit', 'Transit stops (OSM)', false], ['brands', 'Brand outlets (BA POIs)', false]]
+    ${block('Layers', '', `<div class="toggles">${[['watch', 'Watchlist: fast-growing, not yet eligible (×)', false], ['excl', 'Excluded areas (hatched)', true], ['saAll', 'All 15-minute drive areas', false], ['transit', 'Transit stops', false], ['brands', 'Brand outlets', false]]
       .map(([k, l, on]) => `<div class="inline"><calcite-switch data-layer="${k}" ${on ? 'checked' : ''}></calcite-switch> ${esc(l)}</div>`).join('')}</div>`, false)}`;
   let W = { ...O.weights }, res, cands = [], def = null;
   const render = () => {

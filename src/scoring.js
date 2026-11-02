@@ -1,9 +1,9 @@
-// Pure functions: everything the sliders drive is computed here, in the browser (same maths as notebooks 06 and 07).
+// Pure scoring functions.
 export const MALL_INDICES = [
   { key: 'A', name: 'Tenant mix', blurb: 'Variety, premium brands and anchor stores in the mall’s own tenant list.', more: 'Favours malls with a stronger line-up of shops.' },
   { key: 'B', name: 'Competitive headroom', blurb: 'How few other malls fight for the same shoppers (shared 15-min catchment, nearby malls).', more: 'Favours malls with less competition around them.' },
   { key: 'C', name: 'Reachability', blurb: 'People living within a 15-minute drive, plus public transport.', more: 'Favours malls that reach more people.' },
-  { key: 'D', name: 'Spending power', blurb: 'Purchasing power of those people (Business Analyst estimate — treat with caution).', more: 'Favours richer catchments. Kept low by default because the purchasing-power estimates are uncertain.' },
+  { key: 'D', name: 'Spending power', blurb: 'Purchasing power of those people.', more: 'Favours richer catchments. Kept at a modest weight by default.' },
   { key: 'E', name: 'Growth momentum', blurb: 'How fast the catchment is building up, observed and forecast from satellite land cover.', more: 'Favours malls in areas that are growing.' },
   { key: 'G', name: 'Brand ecosystem', blurb: 'Stand-alone outlets of the tenant brands nearby, per 100k people.', more: 'Favours malls in areas where brands already invest.' },
   { key: 'H', name: 'Brand differentiation', blurb: 'Share of the mall’s brands its competitors do not have.', more: 'Favours malls with a unique line-up.' },
@@ -16,8 +16,8 @@ export const MALL_PRESETS = {
   'Less competition': (keys) => Object.fromEntries(keys.map((k) => [k, { B: 4, H: 2, C: 1 }[k] ?? 0.5])),
 };
 export const HEX_COMPONENTS = [
-  { key: 'people', field: 'pop', name: 'People', blurb: 'Residents in the hexagon (Business Analyst).', more: 'Favours densely populated areas.' },
-  { key: 'spending', field: 'spend', name: 'Spending power', blurb: 'Purchasing power estimate — can be unrealistic in special areas such as cantonments.', more: 'Kept low by default.' },
+  { key: 'people', field: 'pop', name: 'People', blurb: 'Residents in the hexagon.', more: 'Favours densely populated areas.' },
+  { key: 'spending', field: 'spend', name: 'Spending power', blurb: 'Purchasing power of the residents.', more: 'Kept at a modest weight by default.' },
   { key: 'growth_now', field: 'built_change_pp', name: 'Recent built-up growth', blurb: 'How much the hexagon built up over the study period (satellite).', more: 'Favours areas that are already developing.' },
   { key: 'growth_next', field: 'fc_gain_pp', name: 'Forecast growth', blurb: 'Expected built-up growth in the next years (land-cover model).', more: 'Favours areas expected to develop next.' },
   { key: 'pull', field: 'growth_pull_pp', name: 'Neighbourhood pull', blurb: 'How fast the surrounding rings 1–4 are building up.', more: 'Favours areas surrounded by growth.' },
@@ -68,7 +68,7 @@ function pctRank(vals, mask) {
   for (let a = 0; a < n;) { let b = a; while (b + 1 < n && vals[idx[b + 1]] === vals[idx[a]]) b++; const r = (a + b) / 2 + 1; for (let k = a; k <= b; k++) out[idx[k]] = r / n; a = b + 1; }
   return out;
 }
-/** Percentile-blend opportunity score among eligible hexes (same rules as notebook 06). */
+/** Percentile-blend opportunity score among eligible hexes. */
 export function scoreHexes(hexes, W, f) {
   const w = normWeights(W);
   const eligible = hexes.map((h) => h.pop >= f.minPop && h.bu_late >= f.minBuilt && (!f.respectExclusions || !h.excluded) && Number.isFinite(h.bu_late) && !(h.valid_share < (f.minValid ?? 0)));

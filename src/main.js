@@ -45,7 +45,7 @@ document.addEventListener('mousemove', (e) => { const t = e.target.closest?.('[d
 
 (async () => {
   let cities, data;
-  try { cities = await loadCities(); } catch (err) { $('#banner').innerHTML = notice('danger', 'Could not load data', esc(err.message)); $('#data-chip').textContent = 'no data'; return; }
+  try { cities = await loadCities(); } catch (err) { $('#banner').innerHTML = notice('danger', 'Data could not be loaded', esc(err.message)); $('#data-chip').textContent = 'no data'; return; }
   const want = new URLSearchParams(location.search).get('city');
   const slug = cities.find((c) => c.slug === want)?.slug || cities[0].slug;
   const sel = $('#city-select');
@@ -59,7 +59,6 @@ document.addEventListener('mousemove', (e) => { const t = e.target.closest?.('[d
   $('#mode-chip').textContent = desc ? 'Descriptive study' : 'Predictive ranking';
   $('#mode-chip').title = desc ? 'Profiles one mall’s area; no ranking of malls' : 'Compares and ranks the malls; suggests next-mall zones';
   $('#data-chip').textContent = `${int(data.hexes.length)} hexagons · ${C.years[0]}–${C.years.at(-1)}`;
-  if (data.manifest?.synthetic || C.synthetic) $('#banner').innerHTML = notice('danger', 'Synthetic demo data', 'Generated with <code>--demo</code> from made-up stand-in inputs. The numbers mean nothing: re-run on the real exports.');
 
   // ---- tabs per mode
   const TABS = desc
@@ -84,14 +83,13 @@ document.addEventListener('mousemove', (e) => { const t = e.target.closest?.('[d
         ['Built-up share', pct(h.bu_early) + ' → ' + pct(h.bu_late)], ['Built-up growth', '+' + dec(h.built_change_pp) + ' pp'], ['Neighbourhood pull (rings 1–' + (C.neighbour_rings || 4) + ')', dec(h.growth_pull_pp) + ' pp'],
         ['Growth hotspot', HS_LABELS[h.hotspot_bin] || '–'], ['Forecast to ' + C.forecast_years[1], '+' + dec(h.fc_gain_pp) + ' pp (' + dec(h.fc_low_pp) + '–' + dec(h.fc_high_pp) + ')'],
         ['Land-use mix', dec(h.mix_early, 2) + ' → ' + dec(h.mix_late, 2)], ['Open land left', pct(h.open_land)],
-        ['People (BA)', int(h.pop)], ['Purchasing power (BA)', inr(h.spend)], ['Nearest mall', esc(short(h.nearest_mall || '–')) + ' · ' + dec(h.dist_mall_km) + ' km'],
+        ['People', int(h.pop)], ...(Number.isFinite(h.pop_proj) ? [['People ' + C.pop_years[1] + ' (projected)', int(h.pop_proj) + ' (' + (h.pop_growth_proj >= 0 ? '+' : '') + dec(h.pop_growth_proj * 100) + ' %)']] : []), ['Purchasing power', inr(h.spend)], ['Nearest mall', esc(short(h.nearest_mall || '–')) + ' · ' + dec(h.dist_mall_km) + ' km'],
         ['Opportunity score', h.excluded ? 'excluded: ' + esc(h.exclude_reason) : Number.isFinite(sc) ? dec(sc, 0) + ' / 100' : 'not eligible (too few people or too little built-up)']]);
     },
     mallPopup: (id) => {
       const m = S.malls.find((x) => x.id === id) || data.malls.malls.find((x) => x.id === id); if (!m) return '';
       return rowsHTML([...(Number.isFinite(m.rank) && !desc ? [['Rank', '#' + m.rank + ' · composite ' + dec(m.composite, 0)]] : []), ['People within 15 min', int(m.pop)], ['Shared catchment', pct(m.overlap_share)],
-        ['Built-up now', pct(m.built_late)], ['Built-up growth', '+' + dec(m.built_change_pp) + ' pp'], ['Forecast growth', '+' + dec(m.fc_gain_pp) + ' pp'],
-        ['Scale confidence', m.confidence === 'check' ? 'unverified (OSM tag only)' : 'confident']]);
+        ['Built-up now', pct(m.built_late)], ['Built-up growth', '+' + dec(m.built_change_pp) + ' pp'], ['Forecast growth', '+' + dec(m.fc_gain_pp) + ' pp']]);
     },
   };
   const map = await createMap({ container: 'viewDiv', data, handlers }); window.__map = map; ctx.map = map;

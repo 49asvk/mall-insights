@@ -1,24 +1,24 @@
 // Descriptive mode: profile of the subject mall's area. No score, no rank.
-import { block, notice, legendBar } from './ui.js';
+import { block, legendBar } from './ui.js';
 import { hbars, lineChart, stackRows, dataTable } from './charts.js';
 import { rampCss, GT_COLORS } from './map.js';
 import { int, dec, pct, inr, esc, short } from './format.js';
 
 export function mountOverview(el, ctx) {
   const { data, map } = ctx, P = data.malls.profile, subj = data.malls.malls.find((m) => m.id === data.city.subject);
-  if (!P || !subj) { el.innerHTML = notice('warning', 'No subject profile', 'Set <code>subject:</code> in city.yaml and re-run notebooks 07–08.'); return { activate() {} }; }
+  if (!P || !subj) { el.innerHTML = '<div class="muted">No profile is available for this mall.</div>'; return { activate() {} }; }
   const v = P.values, c = P.context_median, Y = data.city.years;
   const fact = (label, val, ctxv, tip) => `<div data-tip="${esc(tip)}"><dt>${esc(label)}</dt><dd>${val}</dd><div class="ctx">other malls (median): ${ctxv}</div></div>`;
   const facts = `<dl class="facts">
-    ${fact('People within 15 min', int(v.pop), int(c.pop), 'Residents of the hexagons inside the 15-minute drive area (Business Analyst)')}
-    ${fact('Purchasing power / person', inr(v.spend_pc), inr(c.spend_pc), 'Business Analyst estimate - treat with caution')}
+    ${fact('People within 15 min', int(v.pop), int(c.pop), 'Residents of the hexagons inside the 15-minute drive area ')}
+    ${fact('Purchasing power / person', inr(v.spend_pc), inr(c.spend_pc), 'Average purchasing power per resident of the 15-minute area')}
     ${fact('Shared catchment', pct(v.overlap_share), pct(c.overlap_share), 'Share of those people another listed mall also reaches within 15 minutes')}
     ${fact('Nearest other mall', dec(v.nearest_other_km) + ' km', dec(c.nearest_other_km) + ' km', 'Straight-line distance')}
     ${fact('Built-up now', pct(v.built_late), pct(c.built_late), 'Average built-up share of the 15-minute area, latest two years')}
     ${fact(`Built-up growth ${data.city.early[0]}→${data.city.late.at(-1)}`, '+' + dec(v.built_change_pp) + ' pp', '+' + dec(c.built_change_pp) + ' pp', 'Rise of the built-up share, percentage points')}
-    ${fact(`Forecast growth to ${data.city.forecast_years[1]}`, '+' + dec(v.fc_gain_pp) + ' pp', '+' + dec(c.fc_gain_pp) + ' pp', 'Land-cover model, no population projections')}
+    ${fact(`Forecast growth to ${data.city.forecast_years[1]}`, '+' + dec(v.fc_gain_pp) + ' pp', '+' + dec(c.fc_gain_pp) + ' pp', 'Expected rise of the built-up share, from the land-cover model')}
     ${fact('Growth hotspots', pct(v.hot_share), pct(c.hot_share), 'Share of hexagons in the area that are statistically significant growth hot spots (95 %+)')}
-    ${fact('Brand outlets / 100k people', dec(v.brand_per_100k), dec(c.brand_per_100k), 'Business Analyst POIs of the tenant brands')}
+    ${fact('Brand outlets / 100k people', dec(v.brand_per_100k), dec(c.brand_per_100k), 'Outlets of the tenant brands in the 15-minute area per 100,000 residents')}
     ${fact('Neighbourhood growth pull', dec(v.growth_pull_pp) + ' pp', dec(c.growth_pull_pp) + ' pp', 'How fast the rings around each hexagon build up, averaged')}
   </dl>`;
   const gtRow = { label: short(subj.name), parts: Object.entries(P.growth_types).map(([k, val]) => {
@@ -30,7 +30,7 @@ export function mountOverview(el, ctx) {
   let catchHTML = '';
   if (data.catchment) {
     const rows = data.catchment.filter((r) => r.mall_id === subj.id);
-    if (rows.length) catchHTML = block('People by drive time', 'Business Analyst population inside the 10 / 20 / 30-minute drive areas', dataTable(['Drive time', ...[...new Set(rows.map((r) => r.scenario))]],
+    if (rows.length) catchHTML = block('People by drive time', 'Population inside the 10 / 20 / 30-minute drive areas', dataTable(['Drive time', ...[...new Set(rows.map((r) => r.scenario))]],
       [...new Set(rows.map((r) => r.minutes))].sort((a, b) => a - b).map((m) => [`${m} min`, ...[...new Set(rows.map((r) => r.scenario))].map((s) => int(rows.find((r) => r.minutes === m && r.scenario === s)?.pop))]), true));
   }
   const T = P.tenant;

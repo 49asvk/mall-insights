@@ -45,7 +45,7 @@ export async function createMap({ container, data, handlers }) {
   esriConfig.assetsPath = abs(CONFIG.base + 'arcgis-assets');
   let basemap = null;
   if (CONFIG.basemap === 'arcgis') { esriConfig.apiKey = CONFIG.apiKey; basemap = CONFIG.arcgisStyleLight; }
-  else if (CONFIG.basemap === 'osm') basemap = new Basemap({ baseLayers: [new WebTileLayer({ urlTemplate: 'https://tile.openstreetmap.org/{level}/{col}/{row}.png', copyright: '© OpenStreetMap contributors', title: 'OpenStreetMap' })] });
+  else if (CONFIG.basemap === 'osm') basemap = new Basemap({ baseLayers: [new WebTileLayer({ urlTemplate: 'https://tile.openstreetmap.org/{level}/{col}/{row}.png', copyright: '© OpenStreetMap contributors', title: 'Basemap' })] });
   const hexL = new GraphicsLayer({ title: 'Hexagons' }), exclL = new GraphicsLayer({ title: 'Excluded areas', visible: false }),
     saAll = new GraphicsLayer({ title: '15-min areas', visible: false }), saSel = new GraphicsLayer({ title: '15-min area' }),
     edgeL = new GraphicsLayer({ title: 'Built-up reach', visible: false }), mallsL = new GraphicsLayer({ title: 'Malls' }),
@@ -87,7 +87,7 @@ export async function createMap({ container, data, handlers }) {
   function setMalls(malls, sizeKey) {
     mallsL.removeAll();
     malls.forEach((m) => {
-      const subj = m.role === 'subject', chk = m.confidence === 'check', size = subj ? 18 : sizeKey ? 8 + (m[sizeKey] / 100) * 8 : 9;
+      const subj = m.role === 'subject', chk = false, size = subj ? 18 : sizeKey ? 8 + (m[sizeKey] / 100) * 8 : 9;
       const s = subj ? new SimpleMarkerSymbol({ style: 'diamond', size, color: '#2a78d6', outline: { color: 'white', width: 2 } })
         : new SimpleMarkerSymbol({ style: 'circle', size, color: chk ? [255, 255, 255, 0.92] : [58, 58, 56, 0.95], outline: { color: chk ? [82, 81, 78, 1] : 'white', width: chk ? 1.6 : 1.2 } });
       mallsL.add(new Graphic({ geometry: new Point({ longitude: m.lon, latitude: m.lat }), attributes: { id: m.id, name: m.name }, symbol: s, popupTemplate: mallTpl }));
@@ -128,7 +128,7 @@ export async function createMap({ container, data, handlers }) {
     const L = { hex: hexL, saAll, cand: candL, watch: watchL, malls: mallsL, excl: exclL, edge: edgeL }[key];
     if (L) { L.visible = on; return; }
     const cfg = { transit: ['transit.geojson', { type: 'simple', symbol: { type: 'simple-marker', size: 4, color: [57, 135, 229, 0.8], outline: { width: 0 } } }, 'Transit stops'],
-      brands: ['brand_outlets.geojson', { type: 'simple', symbol: { type: 'simple-marker', style: 'square', size: 6, color: [232, 123, 164, 0.9], outline: { color: 'white', width: 0.6 } } }, 'Brand outlets (BA POIs)'] }[key];
+      brands: ['brand_outlets.geojson', { type: 'simple', symbol: { type: 'simple-marker', style: 'square', size: 6, color: [232, 123, 164, 0.9], outline: { color: 'white', width: 0.6 } } }, 'Brand outlets'] }[key];
     if (!cfg) return;
     if (!optional[key]) { optional[key] = new GeoJSONLayer({ url: abs(CONFIG.dataPath + data.city.slug + '/' + cfg[0]), renderer: cfg[1], title: cfg[2], popupTemplate: { title: '{name}' } }); map.add(optional[key], 6); }
     optional[key].visible = on;

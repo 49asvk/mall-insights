@@ -1,8 +1,8 @@
 // Where is the city building up, around which neighbours, and where next.
 import { block, seg, onSeg, legendBar, legendCats } from './ui.js';
-import { hbars, radar, stackRows, dataTable } from './charts.js';
-import { rampCss, GT_COLORS, HS_COLORS, HS_LABELS } from './map.js';
-import { dec, pct, esc, int } from './format.js';
+import { hbars, radar, stackRows, dataTable, legend } from './charts.js';
+import { rampCss, RAMPS, GT_COLORS, HS_COLORS, HS_LABELS } from './map.js';
+import { dec, pct, esc, int, compact } from './format.js';
 import { on } from './state.js';
 import { quantile } from './overview.js';
 
@@ -26,8 +26,19 @@ export function mountGrowth(el, ctx) {
     type: { label: 'Type', paint: () => { map.setHexCategories(H.map((h) => h.growth_type), GT_COLORS); return legendCats('Growth type', Object.entries(GT_COLORS).filter(([k]) => k !== 'No data').map(([k, c]) => [c, k])); },
       text: '<b>Infill</b>: new building fills gaps inside the existing city. <b>Edge</b>: the city grows outward from its edge. <b>Leapfrog</b>: detached new development — sprawl in the strict sense. <b>Growth frontier</b>: not built yet, but the surrounding rings are building up fast and there is open land left. <b>Stable</b>: little change.' },
     fc: { label: 'Forecast', paint: () => { const hi = q97('fc_gain_pp'); map.setHexValues(H.map((h) => h.fc_gain_pp), { ramp: 'magma', domain: [0, hi] }); return legendBar(rampCss('magma'), '0 pp', `+${dec(hi, 0)} pp`, `Forecast built-up growth ${F.base_year}→${F.target_year}`); },
-      text: `Expected rise of the built-up share by ${F.target_year} if the last years’ patterns continue. Learned from how hexagons changed given their own state and their rings 1–${K}. <b>No population projections are used.</b> It does not know about master plans, zoning or new metro lines.` },
+      text: `Expected rise of the built-up share by ${F.target_year} if the last years’ patterns continue. Learned from how hexagons changed given their own state and their rings 1–${K}. It does not know about master plans, zoning or new metro lines.` },
   };
+  const [PY0, PY1] = data.city.pop_years, hasPop = H.some((h) => Number.isFinite(h.pop_proj));
+  const popNow = H.reduce((a, h) => a + (Number.isFinite(h.pop) ? h.pop : 0), 0), popFut = H.reduce((a, h) => a + (Number.isFinite(h.pop_proj) ? h.pop_proj : Number.isFinite(h.pop) ? h.pop : 0), 0);
+  const popGrowth = popNow ? popFut / popNow - 1 : 0, sgn = (v) => (v >= 0 ? '+' : '−');
+  if (hasPop) {
+    VIEWS.popg = { label: 'Pop. growth', paint: () => { const vals = H.map((h) => h.pop_growth_proj), hi = Math.max(0.01, quantile(vals.filter(Number.isFinite), 0.97)), lo = Math.min(0, quantile(vals.filter(Number.isFinite), 0.03));
+        map.setHexValues(vals, { ramp: 'mix', domain: [lo, hi] }); return legendBar(rampCss('mix'), `${dec(lo * 100, 0)} %`, `+${dec(hi * 100, 0)} %`, `Projected population growth ${PY0}→${PY1}`); },
+      text: `How much the number of residents in each hexagon is expected to change between ${PY0} and ${PY1}, as projected by Business Analyst. Darker green = faster growth.` };
+    VIEWS.pop = { label: 'Pop. ' + PY1, paint: () => { const vals = H.map((h) => h.pop_proj), hi = Math.max(1, quantile(vals.filter(Number.isFinite), 0.97));
+        map.setHexValues(vals, { ramp: 'blues', domain: [0, hi] }); return legendBar(rampCss('blues'), '0', int(hi) + '+', `Projected residents per hexagon, ${PY1}`); },
+      text: `Residents per hexagon in ${PY1}: today’s population grown by the projected ${PY0}→${PY1} change of that hexagon.` };
+  }
   const ev = F.evaluation, cv = ev.spatial_cv, bt = ev.temporal_backtest;
   const pctOr = (x) => (x == null ? '–' : pct(x));
   const trust = `
@@ -35,7 +46,7 @@ export function mountGrowth(el, ctx) {
     ${dataTable(['Method', 'Typical error', 'Found top-10 % growth hexes'], [['This forecast', dec(cv.model?.mae_pp) + ' pp', pctOr(cv.model?.top10_hit)],
       ['"Repeat the last ' + F.horizon + ' years"', dec(cv.repeat_last_period?.mae_pp) + ' pp', pctOr(cv.repeat_last_period?.top10_hit)],
       ['"Copy the touching neighbours"', dec(cv.copy_neighbours?.mae_pp) + ' pp', pctOr(cv.copy_neighbours?.top10_hit)], ['"No change"', dec(cv.no_change?.mae_pp) + ' pp', '–']], true)}
-    <div class="note">${bt?.skipped ? 'Time test: ' + esc(bt.skipped) + '.' : `Time test (trained before ${bt.test_origin}, tested on ${bt.test_origin}→${bt.test_origin + F.horizon}): error ${dec(bt.model?.mae_pp)} pp vs ${dec(bt.repeat_last_period?.mae_pp)} pp for "repeat the last years"; top-10 % found ${pctOr(bt.model?.top10_hit)}.`}</div>
+    ${bt && !bt.skipped && bt.model ? `<div class="note">Time test (trained before ${bt.test_origin}, tested on ${bt.test_origin}→${bt.test_origin + F.horizon}): error ${dec(bt.model?.mae_pp)} pp vs ${dec(bt.repeat_last_period?.mae_pp)} pp for "repeat the last years"; top-10 % found ${pctOr(bt.model?.top10_hit)}.</div>` : ''}
     <div class="chart-title">What the forecast leans on most</div>
     ${hbars(F.importance.slice(0, 6).map((r) => ({ key: r.feature, label: fname(r.feature), value: r.mae_increase_pp, text: '+' + dec(r.mae_increase_pp, 2), tip: 'Increase in error (pp) when this input is scrambled' })), { max: F.importance[0]?.mae_increase_pp || 1 })}`;
   const gtCounts = Object.entries(GT_COLORS).filter(([k]) => k !== 'No data').map(([k, c]) => ({ name: k, color: c, value: H.filter((h) => h.growth_type === k).length }));
@@ -43,12 +54,19 @@ export function mountGrowth(el, ctx) {
   const ev8 = (y) => S8.map((s) => edge.find((r) => r.year === y && r.sector === s)?.edge_km), cap8 = (y) => S8.map((s) => edge.find((r) => r.year === y && r.sector === s)?.beyond_study_area);
   const radarHTML = radar({ labels: S8, series: [{ name: String(y0), color: '#8a8a85', values: ev8(y0), dash: true, fill: 0.05, capped: cap8(y0) }, { name: String(y1), color: '#eb6834', values: ev8(y1), capped: cap8(y1) }] });
   const growthRows = S8.map((s, k) => [s, dec(ev8(y0)[k]), dec(ev8(y1)[k]) + (cap8(y1)[k] ? '+' : ''), (ev8(y1)[k] - ev8(y0)[k] >= 0 ? '+' : '') + dec(ev8(y1)[k] - ev8(y0)[k])]);
+  const BANDS = [['Decline', (g) => g < 0, RAMPS.diverging[1]], ['0–5 %', (g) => g >= 0 && g < 0.05, RAMPS.mix[2]], ['5–10 %', (g) => g >= 0.05 && g < 0.10, RAMPS.mix[4]], ['10–20 %', (g) => g >= 0.10 && g < 0.20, RAMPS.mix[6]], ['20 %+', (g) => g >= 0.20, RAMPS.mix[7]]]
+    .map(([name, test, color]) => ({ name, color, value: H.filter((h) => Number.isFinite(h.pop_growth_proj) && test(h.pop_growth_proj)).length }));
+  const popBlock = !hasPop ? '' : block(`Population projection ${PY0} → ${PY1}`, `${compact(popNow)} → ${compact(popFut)} residents (${sgn(popGrowth)}${dec(Math.abs(popGrowth) * 100)} %)`, `
+      ${hbars([{ key: 'now', label: String(PY0), value: popNow, text: int(popNow) }, { key: 'fut', label: String(PY1), value: popFut, text: int(popFut), cls: 'subj' }], { max: Math.max(popNow, popFut) * 1.02 })}
+      <div class="note">Whole study area: <b>${sgn(popFut - popNow)}${int(Math.abs(popFut - popNow))}</b> residents (${sgn(popGrowth)}${dec(Math.abs(popGrowth) * 100)} %). Hexagons by projected growth:</div>
+      ${stackRows([{ label: 'Hexagons', parts: BANDS, total: int(BANDS.reduce((a, b) => a + b.value, 0)) }], { fmt: int })}${legend(BANDS)}`);
   el.innerHTML = `
-    <div class="intro">Read straight from satellite land cover, hexagon by hexagon, and from each hexagon’s <b>neighbours</b> (rings 1–${K}). Population projections are not used here.</div>
+    <div class="intro">Read straight from satellite land cover, hexagon by hexagon, and from each hexagon’s <b>neighbours</b> (rings 1–${K}).</div>
     ${seg('gr-view', Object.entries(VIEWS).map(([k, v]) => [k, v.label]), view)}
     <div id="gr-text" class="explain"></div>
     <div id="gr-hex"></div>
     ${block('Across the study area', '', stackRows([{ label: 'Hexagons', parts: gtCounts, total: int(H.length) }], { fmt: int }) + `<div class="note">Hotspots: ${Object.entries(D.hotspots).map(([k, v]) => `${esc(k)} ${v}`).join(' · ')}</div>`)}
+    ${popBlock}
     ${block(`Built-up reach by direction from ${D.focus.label}`, `Distance at which the built-up share drops below 50 %, ${y0} vs ${y1}`, radarHTML +
       `<div class="note">Longer arms = continuous city stretches further that way. The arms that grew most show where the city is pushing outward. “+” = still built-up at the edge of the study area. Shown on the map as rays.</div>` +
       dataTable(['Direction', `${y0} km`, `${y1} km`, 'change km'], growthRows))}
@@ -64,9 +82,9 @@ export function mountGrowth(el, ctx) {
     box.innerHTML = block('Selected hexagon', `${h.growth_type} · ${HS_LABELS[h.hotspot_bin] || ''}`, `
       ${hbars(rows, { max: mx })}
       <div class="note">Built-up ${pct(h.bu_early)} → ${pct(h.bu_late)} · open land left ${pct(h.open_land)} · neighbourhood pull ${dec(h.growth_pull_pp)} pp<br>
-      Forecast to ${F.target_year}: <b>+${dec(h.fc_gain_pp)} pp</b> (likely range ${dec(h.fc_low_pp)}–${dec(h.fc_high_pp)} pp)</div>`);
+      Forecast to ${F.target_year}: <b>+${dec(h.fc_gain_pp)} pp</b> (likely range ${dec(h.fc_low_pp)}–${dec(h.fc_high_pp)} pp)${Number.isFinite(h.pop_proj) ? `<br>Residents: <b>${int(h.pop)}</b> → <b>${int(h.pop_proj)}</b> in ${PY1} (${sgn(h.pop_growth_proj)}${dec(Math.abs(h.pop_growth_proj) * 100)} %)` : ''}</div>`);
   };
-  const paint = () => { ctx.setLegend(VIEWS[view].paint()); el.querySelector('#gr-text').innerHTML = VIEWS[view].text; };
+  const paint = () => { map.setLayerVisible('edge', !view.startsWith('pop')); ctx.setLegend(VIEWS[view].paint()); el.querySelector('#gr-text').innerHTML = VIEWS[view].text; };
   onSeg(el, 'gr-view', (v) => { view = v; paint(); });
   on('hex', (i) => { selHex = i; if (ctx.active === 'growth') hexCard(); });
   return {
