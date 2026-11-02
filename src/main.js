@@ -83,7 +83,7 @@ document.addEventListener('mousemove', (e) => { const t = e.target.closest?.('[d
         ['Built-up share', pct(h.bu_early) + ' → ' + pct(h.bu_late)], ['Built-up growth', '+' + dec(h.built_change_pp) + ' pp'], ['Neighbourhood pull (rings 1–' + (C.neighbour_rings || 4) + ')', dec(h.growth_pull_pp) + ' pp'],
         ['Growth hotspot', HS_LABELS[h.hotspot_bin] || '–'], ['Forecast to ' + C.forecast_years[1], '+' + dec(h.fc_gain_pp) + ' pp (' + dec(h.fc_low_pp) + '–' + dec(h.fc_high_pp) + ')'],
         ['Land-use mix', dec(h.mix_early, 2) + ' → ' + dec(h.mix_late, 2)], ['Open land left', pct(h.open_land)],
-        ['People', int(h.pop)], ...(Number.isFinite(h.pop_proj) ? [['People ' + C.pop_years[1] + ' (projected)', int(h.pop_proj) + ' (' + (h.pop_growth_proj >= 0 ? '+' : '') + dec(h.pop_growth_proj * 100) + ' %)']] : []), ['Purchasing power', inr(h.spend)], ['Nearest mall', esc(short(h.nearest_mall || '–')) + ' · ' + dec(h.dist_mall_km) + ' km'],
+        ['People (current)', int(h.pop)], ...(Number.isFinite(h.pop_proj) ? [['Projected people ' + C.pop_years[0] + ' → ' + C.pop_years[1], int(h.pop_base) + ' → ' + int(h.pop_proj) + ' (' + (h.pop_growth_proj >= 0 ? '+' : '−') + dec(Math.abs(h.pop_growth_proj) * 100) + ' %)']] : []), ['Purchasing power', inr(h.spend)], ['Nearest mall', esc(short(h.nearest_mall || '–')) + ' · ' + dec(h.dist_mall_km) + ' km'],
         ['Opportunity score', h.excluded ? 'excluded: ' + esc(h.exclude_reason) : Number.isFinite(sc) ? dec(sc, 0) + ' / 100' : 'not eligible (too few people or too little built-up)']]);
     },
     mallPopup: (id) => {
@@ -93,6 +93,12 @@ document.addEventListener('mousemove', (e) => { const t = e.target.closest?.('[d
     },
   };
   const map = await createMap({ container: 'viewDiv', data, handlers }); window.__map = map; ctx.map = map;
+  const bsel = $('#basemap-select');
+  if (CONFIG.basemap === 'arcgis' && !bsel.dataset.ready) {
+    bsel.dataset.ready = '1'; bsel.hidden = false;
+    CONFIG.basemapChoices.forEach(([v, l]) => { const o = document.createElement('calcite-option'); o.value = v; o.textContent = l; if (v === CONFIG.arcgisStyleLight) o.selected = true; bsel.appendChild(o); });
+    bsel.addEventListener('calciteSelectChange', (e) => { window.__map?.setBasemapStyle(e.target.selectedOption?.value || e.target.value); });
+  }
   map.setMalls(data.malls.malls); if (subj) map.selectMall(subj);
   const mounted = {};
   TABS.forEach(([k, , fn]) => { mounted[k] = fn($('#tab-' + k), ctx); });

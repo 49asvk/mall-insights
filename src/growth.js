@@ -29,15 +29,16 @@ export function mountGrowth(el, ctx) {
       text: `Expected rise of the built-up share by ${F.target_year} if the last years’ patterns continue. Learned from how hexagons changed given their own state and their rings 1–${K}. It does not know about master plans, zoning or new metro lines.` },
   };
   const [PY0, PY1] = data.city.pop_years, hasPop = H.some((h) => Number.isFinite(h.pop_proj));
-  const popNow = H.reduce((a, h) => a + (Number.isFinite(h.pop) ? h.pop : 0), 0), popFut = H.reduce((a, h) => a + (Number.isFinite(h.pop_proj) ? h.pop_proj : Number.isFinite(h.pop) ? h.pop : 0), 0);
+  const popNow = H.reduce((a, h) => a + (Number.isFinite(h.pop_base) ? h.pop_base : 0), 0), popFut = H.reduce((a, h) => a + (Number.isFinite(h.pop_proj) ? h.pop_proj : 0), 0);
+  const PYS = data.city.proj_years || [], yearTot = PYS.map((y, k) => ({ y, v: H.reduce((a, h) => a + (Number.isFinite(h.pp[k]) ? h.pp[k] : 0), 0) }));
   const popGrowth = popNow ? popFut / popNow - 1 : 0, sgn = (v) => (v >= 0 ? '+' : '−');
   if (hasPop) {
     VIEWS.popg = { label: 'Pop. growth', paint: () => { const vals = H.map((h) => h.pop_growth_proj), hi = Math.max(0.01, quantile(vals.filter(Number.isFinite), 0.97)), lo = Math.min(0, quantile(vals.filter(Number.isFinite), 0.03));
         map.setHexValues(vals, { ramp: 'mix', domain: [lo, hi] }); return legendBar(rampCss('mix'), `${dec(lo * 100, 0)} %`, `+${dec(hi * 100, 0)} %`, `Projected population growth ${PY0}→${PY1}`); },
-      text: `How much the number of residents in each hexagon is expected to change between ${PY0} and ${PY1}, as projected by Business Analyst. Darker green = faster growth.` };
+      text: `How much the number of residents in each hexagon is expected to change between ${PY0} and ${PY1}, as projected by Esri Business Analyst. Darker green = faster growth.` };
     VIEWS.pop = { label: 'Pop. ' + PY1, paint: () => { const vals = H.map((h) => h.pop_proj), hi = Math.max(1, quantile(vals.filter(Number.isFinite), 0.97));
         map.setHexValues(vals, { ramp: 'blues', domain: [0, hi] }); return legendBar(rampCss('blues'), '0', int(hi) + '+', `Projected residents per hexagon, ${PY1}`); },
-      text: `Residents per hexagon in ${PY1}: today’s population grown by the projected ${PY0}→${PY1} change of that hexagon.` };
+      text: `Projected residents per hexagon in ${PY1} (Esri Business Analyst population projection).` };
   }
   const ev = F.evaluation, cv = ev.spatial_cv, bt = ev.temporal_backtest;
   const pctOr = (x) => (x == null ? '–' : pct(x));
@@ -57,7 +58,7 @@ export function mountGrowth(el, ctx) {
   const BANDS = [['Decline', (g) => g < 0, RAMPS.diverging[1]], ['0–5 %', (g) => g >= 0 && g < 0.05, RAMPS.mix[2]], ['5–10 %', (g) => g >= 0.05 && g < 0.10, RAMPS.mix[4]], ['10–20 %', (g) => g >= 0.10 && g < 0.20, RAMPS.mix[6]], ['20 %+', (g) => g >= 0.20, RAMPS.mix[7]]]
     .map(([name, test, color]) => ({ name, color, value: H.filter((h) => Number.isFinite(h.pop_growth_proj) && test(h.pop_growth_proj)).length }));
   const popBlock = !hasPop ? '' : block(`Population projection ${PY0} → ${PY1}`, `${compact(popNow)} → ${compact(popFut)} residents (${sgn(popGrowth)}${dec(Math.abs(popGrowth) * 100)} %)`, `
-      ${hbars([{ key: 'now', label: String(PY0), value: popNow, text: int(popNow) }, { key: 'fut', label: String(PY1), value: popFut, text: int(popFut), cls: 'subj' }], { max: Math.max(popNow, popFut) * 1.02 })}
+      ${hbars(yearTot.map((r) => ({ key: 'y' + r.y, label: String(r.y), value: r.v, text: int(r.v), cls: r.y === PY1 ? 'subj' : '', tip: `${r.y}: ${int(r.v)} residents (${r.v >= popNow ? '+' : '−'}${dec(Math.abs(popNow ? r.v / popNow - 1 : 0) * 100)} % vs ${PY0})` })), { max: Math.max(...yearTot.map((r) => r.v), 1) * 1.02 })}
       <div class="note">Whole study area: <b>${sgn(popFut - popNow)}${int(Math.abs(popFut - popNow))}</b> residents (${sgn(popGrowth)}${dec(Math.abs(popGrowth) * 100)} %). Hexagons by projected growth:</div>
       ${stackRows([{ label: 'Hexagons', parts: BANDS, total: int(BANDS.reduce((a, b) => a + b.value, 0)) }], { fmt: int })}${legend(BANDS)}`);
   el.innerHTML = `
@@ -82,7 +83,7 @@ export function mountGrowth(el, ctx) {
     box.innerHTML = block('Selected hexagon', `${h.growth_type} · ${HS_LABELS[h.hotspot_bin] || ''}`, `
       ${hbars(rows, { max: mx })}
       <div class="note">Built-up ${pct(h.bu_early)} → ${pct(h.bu_late)} · open land left ${pct(h.open_land)} · neighbourhood pull ${dec(h.growth_pull_pp)} pp<br>
-      Forecast to ${F.target_year}: <b>+${dec(h.fc_gain_pp)} pp</b> (likely range ${dec(h.fc_low_pp)}–${dec(h.fc_high_pp)} pp)${Number.isFinite(h.pop_proj) ? `<br>Residents: <b>${int(h.pop)}</b> → <b>${int(h.pop_proj)}</b> in ${PY1} (${sgn(h.pop_growth_proj)}${dec(Math.abs(h.pop_growth_proj) * 100)} %)` : ''}</div>`);
+      Forecast to ${F.target_year}: <b>+${dec(h.fc_gain_pp)} pp</b> (likely range ${dec(h.fc_low_pp)}–${dec(h.fc_high_pp)} pp)${Number.isFinite(h.pop_proj) ? `<br>Projected residents: <b>${int(h.pop_base)}</b> (${PY0}) → <b>${int(h.pop_proj)}</b> (${PY1}) (${sgn(h.pop_growth_proj)}${dec(Math.abs(h.pop_growth_proj) * 100)} %)` : ''}</div>`);
   };
   const paint = () => { map.setLayerVisible('edge', !view.startsWith('pop')); ctx.setLegend(VIEWS[view].paint()); el.querySelector('#gr-text').innerHTML = VIEWS[view].text; };
   onSeg(el, 'gr-view', (v) => { view = v; paint(); });

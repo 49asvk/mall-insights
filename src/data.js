@@ -29,7 +29,7 @@ export async function loadAll(slug) {
       excluded: !!p.excluded, exclude_reason: scrub(p.exclude_reason), eligible0: !!p.eligible, bu: (p.bu || []).map(num), mix: (p.mix || []).map(num) };
     for (const k of NUMF) h[k] = num(p[k]);
     for (let k = 1; k <= 6; k++) if (p[`ring${k}_change_pp`] !== undefined) h[`ring${k}`] = num(p[`ring${k}_change_pp`]);
-    h.pop_proj = Number.isFinite(h.pop) && Number.isFinite(h.pop_growth_proj) ? h.pop * (1 + h.pop_growth_proj) : NaN;
+    h.pp = (p.pp || []).map(num);
     [h.cx, h.cy] = centroid(f.geometry);
     return h;
   });
@@ -40,7 +40,10 @@ export async function loadAll(slug) {
     return m?.id;
   };
   const sa = saGeo.features.map((f) => { const name = String(f.properties.Name).split(' : ')[0]; return { name, id: matchMall(name), geometry: f.geometry }; });
-  city.pop_years = city.pop_years || [2026, 2030];
+  const PYR = city.proj_years || [], iy = (y) => PYR.indexOf(y);
+  city.pop_years = [2026, 2030].every((y) => iy(y) >= 0) ? [2026, 2030] : [PYR[0], PYR.at(-1)];
+  const i0 = iy(city.pop_years[0]), i1 = iy(city.pop_years[1]);
+  hexes.forEach((h) => { h.pop_base = h.pp[i0] ?? NaN; h.pop_proj = h.pp[i1] ?? NaN; if (h.pop_base > 0 && Number.isFinite(h.pop_proj)) h.pop_growth_proj = h.pop_proj / h.pop_base - 1; });
   const defsClean = (Array.isArray(defs) ? defs : []).map((g) => ({ ...g, source: scrub(g.source), short: scrub(g.short), how: scrub(g.how), name: scrub(g.name) }));
   return { city, hexes, malls, defs: defsClean, opp, dyn, land, sa, tenants, catchment, exclusions, manifest };
 }

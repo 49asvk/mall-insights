@@ -143,5 +143,6 @@ export async function createMap({ container, data, handlers }) {
   return { view, setHexValues, setHexCategories, setMalls, selectMall, setCandidates, setWatchlist, setEdges, highlightHex, showRings, setLayerVisible,
     goTo: (lon, lat, zoom = 13) => view.goTo({ center: [lon, lat], scale: zoomToScale(zoom) }, { duration: 700 }),
     setPadding: (left) => { view.padding = { left }; }, closePopup: () => view.closePopup?.(),
-    setTheme(dark) { if (CONFIG.basemap === 'arcgis') map.basemap = dark ? CONFIG.arcgisStyleDark : CONFIG.arcgisStyleLight; } };
+    setBasemapStyle(style) { if (CONFIG.basemap === 'arcgis') map.basemap = style; },
+    setTheme(dark) { if (CONFIG.basemap === 'arcgis' && /light-gray|dark-gray/.test(map.basemap?.style?.id || map.basemap?.id || 'light-gray')) map.basemap = dark ? CONFIG.arcgisStyleDark : CONFIG.arcgisStyleLight; } };
 }
