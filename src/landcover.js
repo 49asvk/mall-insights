@@ -16,8 +16,7 @@ export function mountLandcover(el, ctx) {
       <calcite-slider id="lc-year" min="${Y[0]}" max="${Y.at(-1)}" step="1" value="${Y.at(-1)}" ticks="1" label-ticks label="Year"></calcite-slider></div>
     <div id="lc-explain" class="note"></div>
     ${block('Whole study area vs the mall’s areas', '', '<div id="lc-chart"></div>')}
-    ${block('By distance ring around the mall', 'Pixels of all hexagons whose centre lies within the ring', '<div id="lc-rings"></div>')}
-    ${block('How to read land-use mix', '', `<div class="note">Land-use mix is the Shannon entropy of the eight land-cover classes, scaled 0–1. <b>High</b> = a patchwork of fields, scrub, trees and buildings (a transition zone). <b>Low</b> = one dominant cover: either fully built city or uniform farmland. <b>Built-up rising while mix falls</b> means the area is consolidating into continuous city (infill); <b>built-up rising while mix rises</b> means building is starting in open country (the early stage of sprawl). The Growth tab separates the two hexagon by hexagon.</div>`, false)}`;
+    ${block('By distance ring around the mall', 'Pixels of all hexagons whose centre lies within the ring', '<div id="lc-rings"></div>')}`;
   const explain = { bu: 'Share of the hexagon classified as built area in that year.', mix: 'Land-use mix (0 = one cover type, 1 = all eight types equally).' };
   const paint = () => {
     const vals = H.map((h) => (varName === 'bu' ? h.bu : h.mix)[yi]);

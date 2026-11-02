@@ -1,14 +1,6 @@
 # Mall Insights web app
 
-Vite + ArcGIS Maps SDK for JavaScript 5.1 + Calcite 5.2. All scores are recomputed in the browser from static files: **no Esri online services, no credits** (the default basemap is OpenStreetMap tiles; set `VITE_BASEMAP=arcgis` + `VITE_ARCGIS_API_KEY` for an Esri basemap, or `none`).
-
-```bash
-# Node 20.19+ or 22.12+
-npm install                                   # also copies the Calcite / ArcGIS assets into public/ (self-hosted)
-npm run sync-data -- ../cities/pune/data/processed/dashboard ../cities/hyderabad/data/processed/dashboard
-npm run dev                                   # http://localhost:5173  (?city=pune / ?city=hyderabad)
-npm run build && npm run preview              # static site in dist/ (any web server, GitHub Pages ...)
-```
+Vite + ArcGIS Maps SDK for JavaScript 5.1 + Calcite 5.2.
 
 The tabs follow the city's **mode**:
 

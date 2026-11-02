@@ -70,8 +70,7 @@ export function mountGrowth(el, ctx) {
     ${popBlock}
     ${block(`Built-up reach by direction from ${D.focus.label}`, `Distance at which the built-up share drops below 50 %, ${y0} vs ${y1}`, radarHTML +
       `<div class="note">Longer arms = continuous city stretches further that way. The arms that grew most show where the city is pushing outward. “+” = still built-up at the edge of the study area. Shown on the map as rays.</div>` +
-      dataTable(['Direction', `${y0} km`, `${y1} km`, 'change km'], growthRows))}
-    ${block('How far to trust the forecast', '', trust, false)}`;
+      dataTable(['Direction', `${y0} km`, `${y1} km`, 'change km'], growthRows))}`;
   const hexCard = () => {
     const box = el.querySelector('#gr-hex');
     if (selHex == null) { box.innerHTML = '<div class="note">Click a hexagon on the map to see how it and its rings changed.</div>'; map.showRings(null); return; }
