@@ -93,6 +93,9 @@ document.addEventListener('mousemove', (e) => { const t = e.target.closest?.('[d
     },
   };
   const map = await createMap({ container: 'viewDiv', data, handlers }); window.__map = map; ctx.map = map;
+  const hexSw = $('#hex-switch');
+  hexSw.addEventListener('calciteSwitchChange', (e) => emit('hexvis', e.target.checked));
+  on('hexvis', (v) => { map.setLayerVisible('hex', v); hexSw.checked = v; document.querySelectorAll('[data-layer="hex"]').forEach((s) => { s.checked = v; }); });
   const bsel = $('#basemap-select');
   if (CONFIG.basemap === 'arcgis' && !bsel.dataset.ready) {
     bsel.dataset.ready = '1'; bsel.hidden = false;
