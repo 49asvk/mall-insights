@@ -3,7 +3,6 @@ import { block, weightPanel, legendBar } from './ui.js';
 import { HEX_COMPONENTS, HEX_PRESETS, scoreHexes, pickCandidates } from './scoring.js';
 import { rampCss } from './map.js';
 import { int, dec, esc, short } from './format.js';
-import { emit } from './state.js';
 
 export function mountOpportunity(el, ctx) {
   const { data, map } = ctx, H = data.hexes, O = data.opp, el_ = data.city.eligibility, cr = data.city.candidates_rule;
@@ -20,9 +19,7 @@ export function mountOpportunity(el, ctx) {
       <div class="wrow"><div class="wlabel"><span>Minimum people in the hexagon</span><span id="op-pop-v">${int(f.minPop)}</span></div><calcite-slider id="op-pop" min="0" max="6000" step="250" value="${f.minPop}"></calcite-slider></div>
       <div class="wrow"><div class="wlabel"><span>Minimum built-up share (latest)</span><span id="op-bu-v">${Math.round(f.minBuilt * 100)} %</span></div><calcite-slider id="op-bu" min="0" max="60" step="5" value="${f.minBuilt * 100}"></calcite-slider></div>
       <div class="wrow"><div class="wlabel"><span>Minimum distance from an existing mall</span><span id="op-d-v">${f.minDist} km</span></div><calcite-slider id="op-d" min="0" max="5" step="0.5" value="${f.minDist}"></calcite-slider></div>
-      <div class="wrow"><div class="wlabel"><span>Minimum spacing between zones</span><span id="op-s-v">${f.minSep} km</span></div><calcite-slider id="op-s" min="1" max="8" step="0.5" value="${f.minSep}"></calcite-slider></div></div>`, false)}
-    ${block('Layers', '', `<div class="toggles">${[['hex', 'Hexagon grid', true], ['watch', 'Watchlist: fast-growing, not yet eligible (×)', false], ['excl', 'Excluded areas (hatched)', true], ['saAll', 'All 15-minute drive areas', false], ['transit', 'Transit stops', false], ['brands', 'Brand outlets', false]]
-      .map(([k, l, on]) => `<div class="inline"><calcite-switch data-layer="${k}" ${on ? 'checked' : ''}></calcite-switch> ${esc(l)}</div>`).join('')}</div>`, false)}`;
+      <div class="wrow"><div class="wlabel"><span>Minimum spacing between zones</span><span id="op-s-v">${f.minSep} km</span></div><calcite-slider id="op-s" min="1" max="8" step="0.5" value="${f.minSep}"></calcite-slider></div></div>`, false)}`;
   let W = { ...O.weights }, res, cands = [], def = null;
   const render = () => {
     res = scoreHexes(H, W, f); cands = pickCandidates(H, res, W, f);
@@ -41,14 +38,14 @@ export function mountOpportunity(el, ctx) {
   const bind = (id, key, fmt, scale = 1) => el.querySelector('#' + id).addEventListener('calciteSliderInput', (e) => { f[key] = +e.target.value / scale; el.querySelector('#' + id + '-v').textContent = fmt(+e.target.value); render(); });
   bind('op-pop', 'minPop', int); bind('op-bu', 'minBuilt', (v) => v + ' %', 100); bind('op-d', 'minDist', (v) => v + ' km'); bind('op-s', 'minSep', (v) => v + ' km');
   el.querySelector('#op-excl').addEventListener('calciteSwitchChange', (e) => { f.respectExclusions = e.target.checked; render(); });
-  el.querySelectorAll('[data-layer]').forEach((s) => s.addEventListener('calciteSwitchChange', (e) => s.dataset.layer === 'hex' ? emit('hexvis', e.target.checked) : map.setLayerVisible(s.dataset.layer, e.target.checked)));
   map.setWatchlist(O.watchlist || []);
   return {
     score: (i) => res?.score[i], comps: (i) => res && Object.fromEntries(HEX_COMPONENTS.map((c) => [c.name, res.comps[c.key][i]])),
     activate() {
-      map.setLayerVisible('cand', true); map.setLayerVisible('excl', el.querySelector('[data-layer="excl"]').checked); map.setLayerVisible('watch', el.querySelector('[data-layer="watch"]').checked);
-      map.setLayerVisible('edge', false); render();
+      ctx.setLayers([{ key: 'hex', label: 'Hexagons' }, { key: 'malls', label: 'Malls' }, { key: 'cand', label: 'Candidate zones' }, { key: 'watch', label: 'Watchlist: fast-growing, not yet eligible', on: false }, { key: 'excl', label: 'Excluded areas' },
+        { key: 'saAll', label: '15-minute drive areas', on: false }, { key: 'transit', label: 'Transit stops', on: false }, { key: 'brands', label: 'Brand outlets', on: false }]);
+      render();
     },
-    deactivate() { map.setLayerVisible('cand', false); map.setLayerVisible('watch', false); map.highlightHex(null); },
+    deactivate() { map.highlightHex(null); },
   };
 }

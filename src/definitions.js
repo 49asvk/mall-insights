@@ -23,5 +23,5 @@ export function mountDefinitions(el, ctx) {
 `;
   el.querySelector('#df-q').addEventListener('calciteInputInput', (e) => render(e.target.value));
   render();
-  return { activate() { ctx.map.setHexValues(data.hexes.map((h) => h.bu_late), { ramp: 'greys', domain: [0, 1], opacity: 0.55 }); ctx.setLegend(legendBar(rampCss('greys'), '0 %', '100 %', 'Built-up share, latest years')); } };
+  return { activate() { ctx.setLayers([{ key: 'hex', label: 'Hexagons' }, { key: 'malls', label: 'Malls' }]); ctx.map.setHexValues(data.hexes.map((h) => h.bu_late), { ramp: 'greys', domain: [0, 1], opacity: 0.55 }); ctx.setLegend(legendBar(rampCss('greys'), '0 %', '100 %', 'Built-up share, latest years')); } };
 }

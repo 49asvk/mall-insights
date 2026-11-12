@@ -47,7 +47,7 @@ export function mountRanking(el, ctx) {
   return {
     activate() {
       map.setHexValues(data.hexes.map((h) => h.bu_late), { ramp: 'greys', domain: [0, 1], opacity: 0.55 });
-      ['cand', 'watch', 'excl', 'edge'].forEach((k) => map.setLayerVisible(k, false)); map.setLayerVisible('saAll', false);
+      ctx.setLayers([{ key: 'hex', label: 'Hexagons' }, { key: 'malls', label: 'Malls' }]);
       ctx.setLegend(legendBar(rampCss('greys'), '0 %', '100 %', 'Built-up share, latest years · circles: malls sized by composite'));
     },
   };

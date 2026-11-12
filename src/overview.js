@@ -42,13 +42,12 @@ export function mountOverview(el, ctx) {
     <div class="intro"><b>Descriptive study.</b> What the area around <b>${esc(subj.name)}</b> looks like and how it is changing. There is <b>no score and no ranking</b> here: other malls appear only as context (their median).</div>
     ${block('Inside the 15-minute drive area', 'Same yardstick for every mall: hexagons whose centre lies inside the drive area', facts)}
     ${block('How the area is growing', 'Share of the 15-minute area’s hexagons by growth type', stackRows([gtRow], { fmt: (x) => pct(x) }) + '<div class="note">Infill = filling gaps inside the city; edge = the city growing outward; leapfrog = detached new development (sprawl); frontier = open land surrounded by growth.</div>')}
-    ${block('Built-up share over time, by drive time', 'Satellite land cover, pooled over each drive-time area', lineChart({ xs: Y.map(String), series: series('built'), fmt: (x) => pct(x), yMin: null, cap: 1 }) +
-      '<div class="chart-title">Land-use mix (0 = one cover type, 1 = fully mixed)</div>' + lineChart({ xs: Y.map(String), series: series('mix'), fmt: (x) => dec(x, 2), yMin: null, cap: 1 }))}
+    ${block('Built-up share over time, by drive time', 'Satellite land cover, pooled over each drive-time area', lineChart({ xs: Y.map(String), series: series('built'), fmt: (x) => pct(x), yMin: null, cap: 1 }))}
     ${catchHTML}${tenHTML}`;
   return {
     activate() {
       map.setHexValues(data.hexes.map((h) => h.built_change_pp), { ramp: 'heat', domain: [0, Math.max(5, quantile(data.hexes.map((h) => h.built_change_pp), 0.97))] });
-      map.selectMall(subj); ['cand', 'watch', 'excl', 'edge'].forEach((k) => map.setLayerVisible(k, false));
+      map.selectMall(subj); ctx.setLayers([{ key: 'hex', label: 'Hexagons' }, { key: 'malls', label: 'Malls' }, { key: 'saAll', label: '15-minute drive areas' }]);
       ctx.setLegend(legendBar(rampCss('heat'), '0 pp', '+' + dec(quantile(data.hexes.map((h) => h.built_change_pp), 0.97), 0) + ' pp', `Built-up growth ${data.city.early[0]}→${data.city.late.at(-1)} (blue outline: ${short(subj.name)}'s 15-min area)`));
     },
   };

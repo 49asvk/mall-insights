@@ -1,5 +1,5 @@
 // Land cover per hexagon, year by year (time slider + play).
-import { block, seg, onSeg, legendBar } from './ui.js';
+import { block, legendBar } from './ui.js';
 import { lineChart, legend } from './charts.js';
 import { rampCss } from './map.js';
 import { dec, pct, esc, short } from './format.js';
@@ -8,20 +8,20 @@ import { on } from './state.js';
 const RC = ['#1baf7a', '#2a78d6', '#eda100', '#e87ba4', '#6250d6'];
 export function mountLandcover(el, ctx) {
   const { data, map } = ctx, Y = data.city.years, H = data.hexes;
-  let varName = 'bu', yi = Y.length - 1, timer = null, focusId = data.city.subject || data.malls.malls[0]?.id;
+  const varName = 'bu';
+  let yi = Y.length - 1, timer = null, focusId = data.city.subject || data.malls.malls[0]?.id;
   el.innerHTML = `
     <div class="intro">Esri Sentinel-2 10 m land cover, counted <b>per hexagon and per year</b>. Drag the year or press play to watch the city fill in.</div>
-    ${seg('lc-var', [['bu', 'Built-up share'], ['mix', 'Land-use mix']], 'bu')}
     <div class="year-row"><calcite-button id="lc-play" scale="s" icon-start="play" appearance="outline">Play</calcite-button>
       <calcite-slider id="lc-year" min="${Y[0]}" max="${Y.at(-1)}" step="1" value="${Y.at(-1)}" ticks="1" label-ticks label="Year"></calcite-slider></div>
     <div id="lc-explain" class="note"></div>
     ${block('Whole study area vs the mall’s areas', '', '<div id="lc-chart"></div>')}
     ${block('By distance ring around the mall', 'Pixels of all hexagons whose centre lies within the ring', '<div id="lc-rings"></div>')}`;
-  const explain = { bu: 'Share of the hexagon classified as built area in that year.', mix: 'Land-use mix (0 = one cover type, 1 = all eight types equally).' };
+  const explain = { bu: 'Share of the hexagon classified as built area in that year.' };
   const paint = () => {
     const vals = H.map((h) => (varName === 'bu' ? h.bu : h.mix)[yi]);
-    map.setHexValues(vals, { ramp: varName === 'bu' ? 'greys' : 'mix', domain: [0, 1] });
-    ctx.setLegend(legendBar(rampCss(varName === 'bu' ? 'greys' : 'mix'), varName === 'bu' ? '0 %' : '0', varName === 'bu' ? '100 %' : '1', `${varName === 'bu' ? 'Built-up share' : 'Land-use mix'} ${Y[yi]}`));
+    map.setHexValues(vals, { ramp: 'greys', domain: [0, 1] });
+    ctx.setLegend(legendBar(rampCss('greys'), '0 %', '100 %', `Built-up share ${Y[yi]}`));
     el.querySelector('#lc-explain').textContent = explain[varName];
     charts();
   };
@@ -39,7 +39,6 @@ export function mountLandcover(el, ctx) {
       series: R.cumulative.map((r, k) => ({ name: `within ${r.ring_km} km${r.coverage < 0.9 ? ` (only ${pct(r.coverage)} of the ring inside the study area)` : ''}`, short: `${r.ring_km} km`, color: RC[k % RC.length], values: r.series.map((s) => s[key]) })) }) +
       legend(R.cumulative.map((r, k) => ({ name: `≤ ${r.ring_km} km${r.coverage < 0.9 ? ' (partly outside study area)' : ''}`, color: RC[k % RC.length] })));
   };
-  onSeg(el, 'lc-var', (v) => { varName = v; paint(); });
   el.querySelector('#lc-year').addEventListener('calciteSliderInput', (e) => { yi = Y.indexOf(+e.target.value); paint(); });
   const play = el.querySelector('#lc-play');
   play.addEventListener('click', () => {
@@ -48,5 +47,5 @@ export function mountLandcover(el, ctx) {
     timer = setInterval(() => { yi++; if (yi >= Y.length) { clearInterval(timer); timer = null; play.iconStart = 'play'; play.textContent = 'Play'; yi = Y.length - 1; } el.querySelector('#lc-year').value = Y[yi]; paint(); }, 900);
   });
   on('select', (id) => { if (data.land.malls[id]) { focusId = id; if (ctx.active === 'landcover') charts(); } });
-  return { activate() { ['cand', 'watch', 'excl', 'edge'].forEach((k) => map.setLayerVisible(k, false)); const m = data.malls.malls.find((x) => x.id === focusId); if (m) map.selectMall(m); paint(); } };
+  return { activate() { ctx.setLayers([{ key: 'hex', label: 'Hexagons' }, { key: 'malls', label: 'Malls' }]); const m = data.malls.malls.find((x) => x.id === focusId); if (m) map.selectMall(m); paint(); } };
 }

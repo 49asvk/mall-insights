@@ -11,6 +11,7 @@ import '@esri/calcite-components/components/calcite-slider';
 import '@esri/calcite-components/components/calcite-segmented-control';
 import '@esri/calcite-components/components/calcite-segmented-control-item';
 import '@esri/calcite-components/components/calcite-switch';
+import '@esri/calcite-components/components/calcite-checkbox';
 import '@esri/calcite-components/components/calcite-select';
 import '@esri/calcite-components/components/calcite-option';
 import '@esri/calcite-components/components/calcite-notice';
@@ -50,7 +51,7 @@ document.addEventListener('mousemove', (e) => { const t = e.target.closest?.('[d
   const slug = cities.find((c) => c.slug === want)?.slug || cities[0].slug;
   const sel = $('#city-select');
   sel.innerHTML = cities.map((c) => `<calcite-option value="${esc(c.slug)}" ${c.slug === slug ? 'selected' : ''}>${esc(c.name)}${c.synthetic ? ' (demo data)' : ''}</calcite-option>`).join('');
-  if (cities.length < 2) sel.setAttribute('disabled', '');
+  sel.hidden = cities.length < 2;
   sel.addEventListener('calciteSelectChange', (e) => { location.search = '?city=' + encodeURIComponent(e.target.value); });
   try { data = await loadAll(slug); } catch (err) { $('#banner').innerHTML = notice('danger', 'Could not load data', esc(err.message)); $('#data-chip').textContent = 'no data'; return; }
   const C = data.city, desc = C.mode === 'descriptive', subj = data.malls.malls.find((m) => m.id === C.subject);
@@ -72,11 +73,19 @@ document.addEventListener('mousemove', (e) => { const t = e.target.closest?.('[d
   const S = { malls: data.malls.malls }; window.__S = S;
   const ringsOf = buildRings(data.hexes, C.neighbour_rings || 4);
   const legendEl = $('#map-legend');
-  const ctx = { S, data, setLegend: (html) => { legendEl.innerHTML = html; }, ringsOf, active: null };
+  const ALL_OPTIONAL = ['cand', 'watch', 'excl', 'edge', 'saAll', 'transit', 'brands'], layerState = {}, listEl = $('#mp-layer-list');
+  const ctx = { S, data, setLegend: (html) => { legendEl.innerHTML = html; }, ringsOf, active: null,
+    setLayers(items) {
+      const keys = new Set(items.map((i) => i.key));
+      ALL_OPTIONAL.filter((k) => !keys.has(k)).forEach((k) => ctx.map.setLayerVisible(k, false));
+      items.forEach((i) => { if (layerState[i.key] === undefined) layerState[i.key] = i.on !== false; ctx.map.setLayerVisible(i.key, layerState[i.key]); });
+      listEl.innerHTML = items.map((i) => `<label class="mp-row"><calcite-checkbox data-k="${esc(i.key)}" ${layerState[i.key] ? 'checked' : ''}></calcite-checkbox><span>${esc(i.label)}</span></label>`).join('');
+      listEl.querySelectorAll('calcite-checkbox').forEach((c) => c.addEventListener('calciteCheckboxChange', (e) => { layerState[c.dataset.k] = e.target.checked; ctx.map.setLayerVisible(c.dataset.k, e.target.checked); }));
+    } };
   const rowsHTML = (rows) => `<table class="pop">${rows.map(([k, v]) => `<tr><td>${k}</td><td>${v}</td></tr>`).join('')}</table>`;
   const handlers = {
     onMall: (id) => emit('select', id), onCand: (k) => ctx.focusCandidate?.(k), onHex: (i) => { emit('hex', i); map.highlightHex(i); },
-    hexTitle: (i) => `Hexagon · ${esc(data.hexes[i].growth_type)}`,
+    hexTitle: () => 'Hexagon',
     hexPopup: (i) => {
       const h = data.hexes[i], sc = mounted.opportunity?.score(i);
       return `<div class="pop-spark">Built-up share ${C.years[0]}–${C.years.at(-1)}<br>${sparkline(h.bu, { fmt: (v) => pct(v) })}</div>` + rowsHTML([
@@ -93,9 +102,6 @@ document.addEventListener('mousemove', (e) => { const t = e.target.closest?.('[d
     },
   };
   const map = await createMap({ container: 'viewDiv', data, handlers }); window.__map = map; ctx.map = map;
-  const hexSw = $('#hex-switch');
-  hexSw.addEventListener('calciteSwitchChange', (e) => emit('hexvis', e.target.checked));
-  on('hexvis', (v) => { map.setLayerVisible('hex', v); hexSw.checked = v; document.querySelectorAll('[data-layer="hex"]').forEach((s) => { s.checked = v; }); });
   const bsel = $('#basemap-select');
   if (CONFIG.basemap === 'arcgis' && !bsel.dataset.ready) {
     bsel.dataset.ready = '1'; bsel.hidden = false;

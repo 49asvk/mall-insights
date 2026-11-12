@@ -64,7 +64,10 @@ table.pop { font-size: 0.78rem; border-collapse: collapse; } table.pop td { padd
 calcite-tab-nav { padding: 0 0.5rem; }
 .panel-wrap, .tab { background: var(--calcite-color-foreground-1, #fff); }
 /* ---- v3 additions ---- */
-.map-legend { position: absolute; right: 12px; bottom: 26px; z-index: 5; max-width: 300px; background: var(--surface); color: var(--text-1); border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; font-size: 0.72rem; box-shadow: 0 1px 4px rgba(0,0,0,.15); }
+.map-panel { position: absolute; right: 12px; bottom: 26px; z-index: 5; width: 270px; max-width: calc(100% - 24px); background: var(--surface); color: var(--text-1); border: 1px solid var(--line); border-radius: 6px; font-size: 0.74rem; box-shadow: 0 1px 4px rgba(0,0,0,.15); max-height: 70%; overflow: auto; }
+.mp-layers { padding: 6px 10px; border-bottom: 1px solid var(--line); } .mp-layers summary { cursor: pointer; font-weight: 600; }
+.mp-row { display: flex; align-items: center; gap: 8px; padding: 3px 0; cursor: pointer; }
+.map-legend { padding: 6px 10px; font-size: 0.72rem; }
 .map-legend:empty { display: none; }
 .lg-title { font-weight: 600; margin-bottom: 3px; }
 .legend-bar { margin-top: 2px; }
@@ -86,5 +89,3 @@ details.def { border-bottom: 1px solid var(--line); padding: 0.35rem 0; } detail
 .chart.radar { max-width: 270px; margin: 0 auto; }
 calcite-input { margin: 0.4rem 0; }
 .rules .wrow { margin-bottom: 0.9rem; }
-
-.hex-toggle { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; color: var(--text-1); cursor: pointer; white-space: nowrap; }

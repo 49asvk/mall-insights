@@ -16,9 +16,8 @@
       <div class="header-right">
         <calcite-chip id="mode-chip" scale="s" appearance="outline-fill" icon="information">mode</calcite-chip>
         <calcite-select id="basemap-select" label-text="Basemap" scale="s" width="auto" hidden></calcite-select>
-        <calcite-select id="city-select" label-text="City" scale="s" width="auto"></calcite-select>
+        <calcite-select id="city-select" label-text="City" scale="s" width="auto" hidden></calcite-select>
         <calcite-chip id="data-chip" scale="s" icon="data" appearance="outline-fill">loading…</calcite-chip>
-        <label id="hex-toggle" class="hex-toggle"><calcite-switch id="hex-switch" checked></calcite-switch> Hexagons</label>
         <calcite-switch id="theme-switch" label-text-end="Dark"></calcite-switch>
       </div>
     </header>
@@ -31,7 +30,10 @@
       </div>
     </calcite-shell-panel>
     <div id="viewDiv"></div>
-    <div id="map-legend" class="map-legend"></div>
+    <div id="map-panel" class="map-panel">
+      <details id="mp-layers" class="mp-layers" open><summary>Layers</summary><div id="mp-layer-list"></div></details>
+      <div id="map-legend" class="map-legend"></div>
+    </div>
   </calcite-shell>
   <div id="tip" class="tip" role="tooltip"></div>
   <script type="module" src="/src/main.js"></script>

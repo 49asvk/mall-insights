@@ -8,7 +8,9 @@ async function getJSON(url, optional = false) {
 export async function loadCities() {
   const c = await getJSON(CONFIG.dataPath + 'cities.json');
   if (!Array.isArray(c) || !c.length) throw new Error('No cities are available');
-  return c;
+  const only = c.filter((x) => CONFIG.cities.includes(x.slug));
+  if (!only.length) throw new Error('No cities are available');
+  return only;
 }
 const scrub = (s) => String(s ?? '').replace(/\s*\(OSM\)/g, '').replace(/\s*\+\s*OSM[^,;.]*/g, '').replace(/OpenStreetMap( contributors)?|\bOSM\b/g, 'Esri').replace(/\s{2,}/g, ' ').trim();
 const num = (v) => (v === null || v === undefined ? NaN : +v);

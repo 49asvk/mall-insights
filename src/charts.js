@@ -8,7 +8,7 @@ export function dataTable(headers, rows, open = false) {
 export function hbars(rows, { max = 100, attr = 'data-key' } = {}) {
   return `<div class="hbars">${rows.map((r) => `<div class="hbar ${r.cls || ''}" ${attr}="${esc(r.key)}" data-tip="${esc(r.tip || r.label)}">
     ${r.rank !== undefined ? `<span class="hb-rank">${r.rank}</span>` : ''}<span class="hb-label">${esc(r.label)}</span>
-    <span class="hb-track"><span class="hb-fill" style="width:${Math.max(0, Math.min(100, (r.value / max) * 100))}%"></span>${
+    <span class="hb-track"><span class="hb-fill" style="width:${Math.max(0, Math.min(100, (r.value / max) * 100))}%${r.color ? `;background:${r.color}` : ''}"></span>${
       Number.isFinite(r.tick) ? `<span class="hb-tick" style="left:${Math.max(0, Math.min(100, (r.tick / max) * 100))}%"></span>` : ''}</span>
     <span class="hb-val">${r.delta ? `<span class="delta ${r.delta > 0 ? 'up' : 'down'}">${r.delta > 0 ? '▲' : '▼'}${Math.abs(r.delta)}</span> ` : ''}${esc(r.text ?? r.value.toFixed(1))}</span></div>`).join('')}</div>`;
 }
