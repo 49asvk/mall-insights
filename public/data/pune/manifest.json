@@ -1,7 +1,7 @@
 {
- "generated": "2026-10-29 13:34:16",
+ "generated": "2026-11-12 11:36:13",
  "city": "pune",
- "mode": "descriptive",
+ "mode": "predictive",
  "synthetic": false,
  "files": [
   "city.json",

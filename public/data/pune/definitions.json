@@ -473,6 +473,105 @@
   "support": false
  },
  {
+  "key": "A",
+  "name": "A \u00b7 Tenant mix",
+  "level": "mall_index",
+  "unit": "0-100",
+  "modes": "predictive",
+  "source": "tenant lists (all malls)",
+  "short": "Variety, premium share and anchors of the tenant list, relative to the other malls.",
+  "how": "A_abs scaled across malls. Only when every mall has a tenant list.",
+  "support": false
+ },
+ {
+  "key": "B",
+  "name": "B \u00b7 Competitive headroom",
+  "level": "mall_index",
+  "unit": "0-100",
+  "modes": "predictive",
+  "source": "15-min service areas",
+  "short": "Higher = less competition from other malls for the same shoppers.",
+  "how": "100 x (1 - (0.5 shared catchment + 0.3 other malls per hex + 0.2 closeness of nearest mall)), each scaled across malls.",
+  "support": false
+ },
+ {
+  "key": "C",
+  "name": "C \u00b7 Reachability",
+  "level": "mall_index",
+  "unit": "0-100",
+  "modes": "predictive",
+  "source": "Esri Business Analyst (offline), enriched in ArcGIS Pro + OSM",
+  "short": "How many people and how much public transport the 15-minute area holds.",
+  "how": "100 x (0.7 population + 0.3 transit), scaled across malls.",
+  "support": false
+ },
+ {
+  "key": "D",
+  "name": "D \u00b7 Spending power",
+  "level": "mall_index",
+  "unit": "0-100",
+  "modes": "predictive",
+  "source": "Esri Business Analyst (offline), enriched in ArcGIS Pro",
+  "short": "Purchasing power and density of the catchment (low default weight).",
+  "how": "100 x (0.5 total purchasing power + 0.25 per person + 0.25 population density), scaled across malls.",
+  "support": false
+ },
+ {
+  "key": "E",
+  "name": "E \u00b7 Growth momentum",
+  "level": "mall_index",
+  "unit": "0-100",
+  "modes": "predictive",
+  "source": "Esri Sentinel-2 10 m Land Use/Land Cover (annual)",
+  "short": "How fast the catchment is building up, now and in the forecast. No population projections.",
+  "how": "100 x (0.5 observed built-up growth + 0.5 forecast growth), scaled across malls.",
+  "support": false
+ },
+ {
+  "key": "G",
+  "name": "G \u00b7 Brand ecosystem",
+  "level": "mall_index",
+  "unit": "0-100",
+  "modes": "predictive",
+  "source": "Business Analyst POIs",
+  "short": "Outlets of the tenant brands per 100k people around the mall (market depth).",
+  "how": "brand_per_100k scaled across malls.",
+  "support": false
+ },
+ {
+  "key": "H",
+  "name": "H \u00b7 Brand differentiation",
+  "level": "mall_index",
+  "unit": "0-100",
+  "modes": "predictive",
+  "source": "tenant lists (all malls)",
+  "short": "Share of the mall's brands that its competitors (malls with overlapping 15-min areas) do not have.",
+  "how": "1 - shared-brand share, scaled across malls. Only when every mall has a tenant list.",
+  "support": false
+ },
+ {
+  "key": "composite",
+  "name": "Composite score",
+  "level": "mall_index",
+  "unit": "0-100",
+  "modes": "predictive",
+  "source": "indices above",
+  "short": "Weighted average of the indices (weights = sliders).",
+  "how": "Sum of weight x index; weights re-normalised to 100 % over the indices available.",
+  "support": false
+ },
+ {
+  "key": "rank_p10 / rank_p90",
+  "name": "Rank range",
+  "level": "mall_index",
+  "unit": "rank",
+  "modes": "predictive",
+  "source": "composite",
+  "short": "How stable the rank is: the rank in the best 10 % and worst 10 % of 500 random re-weightings around the chosen weights.",
+  "how": "Dirichlet(25 x weights) draws.",
+  "support": false
+ },
+ {
   "key": "edge_km",
   "name": "Built-up reach by direction",
   "level": "focus",
@@ -689,6 +788,28 @@
   "modes": "both",
   "source": "15-min service area",
   "short": "Number of hexagons whose centre lies in the 15-minute area.",
+  "how": "-",
+  "support": true
+ },
+ {
+  "key": "rank / rank_median / share_top3",
+  "name": "Rank details",
+  "level": "mall_index",
+  "unit": "rank / share",
+  "modes": "predictive",
+  "source": "composite",
+  "short": "Rank with the default weights; median rank over 500 random re-weightings; share of those re-weightings in which the mall is in the top 3.",
+  "how": "Dirichlet(25 x weights) draws.",
+  "support": true
+ },
+ {
+  "key": "brand_overlap_share / competitors",
+  "name": "Brand overlap with competitors",
+  "level": "mall_index",
+  "unit": "share / count",
+  "modes": "predictive",
+  "source": "tenant lists",
+  "short": "Share of the mall's brands its competitors also have (feeds H), and how many competitors (malls whose 15-min area overlaps > 5 % of its own).",
   "how": "-",
   "support": true
  }
