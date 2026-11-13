@@ -1,6 +1,6 @@
 // Where is the city building up, around which neighbours, and where next.
 import { block, seg, onSeg, legendBar } from './ui.js';
-import { hbars, radar, legend, dataTable } from './charts.js';
+import { hbars, radar, legend, dataTable, lineChart } from './charts.js';
 import { rampCss, HS_COLORS, HS_LABELS } from './map.js';
 import { dec, pct, esc, int, compact } from './format.js';
 import { on } from './state.js';
@@ -17,8 +17,6 @@ export function mountGrowth(el, ctx) {
   const VIEWS = {
     change: { label: 'Growth', paint: () => { const hi = q97('built_change_pp'); map.setHexValues(H.map((h) => h.built_change_pp), { ramp: 'heat', domain: [0, hi] }); return legendBar(rampCss('heat'), '0 pp', `+${dec(hi, 0)} pp`, `Built-up growth ${data.city.early[0]}→${data.city.late.at(-1)}`); },
       text: 'How many percentage points of the hexagon turned into built-up area between the start years and the latest years.' },
-    pull: { label: 'Pull', paint: () => { const hi = q97('growth_pull_pp'); map.setHexValues(H.map((h) => h.growth_pull_pp), { ramp: 'heat', domain: [0, hi] }); return legendBar(rampCss('heat'), '0 pp', `+${dec(hi, 0)} pp`, `Neighbourhood growth pull (rings 1–${K})`); },
-      text: `How fast the surroundings are building up: the growth of the hexagons 1, 2, 3 … ${K} steps away (on average ≈ 0.9 / 1.7 / 2.5 / 3.3 km), the closest ring counting most. High pull on a hexagon that has not grown yet = it is next in line. Click a hexagon to see its rings.` },
     hot: { label: 'Hotspots', paint: () => { map.setHexCategories(H.map((h) => String(h.hotspot_bin)), HS_COLORS); return legendCatsHS(); },
       text: 'Clusters of hexagons growing unusually fast (hot) or slowly (cold) compared with the whole area — tested statistically over each hexagon plus rings 1–2, like ArcGIS Pro’s Hot Spot Analysis. A single fast hexagon is not a hot spot; a fast neighbourhood is.' },
     fc: { label: 'Forecast', paint: () => { const hi = q97('fc_gain_pp'); map.setHexValues(H.map((h) => h.fc_gain_pp), { ramp: 'magma', domain: [0, hi] }); return legendBar(rampCss('magma'), '0 pp', `+${dec(hi, 0)} pp`, `Forecast built-up growth ${F.base_year}→${F.target_year}`); },
@@ -38,7 +36,7 @@ export function mountGrowth(el, ctx) {
   if (hasPop) {
     VIEWS.pop = { label: 'Pop. ' + PY1, paint: () => { const vals = H.map((h) => h.pop_proj), hi = Math.max(1, quantile(vals.filter(Number.isFinite), 0.97));
         map.setHexValues(vals, { ramp: 'heat', domain: [0, hi] }); return legendBar(rampCss('heat'), '0', int(hi) + '+', `Projected residents per hexagon, ${PY1}`); },
-      text: `Projected residents per hexagon in ${PY1} (Esri Business Analyst population projection). Click a hexagon to see its own series.` };
+      text: `Projected residents per hexagon in ${PY1} (Esri Business Analyst population projection).` };
   }
   const tot = yrs.map((r) => sumAt(r.k)), iNow = yrs.findIndex((r) => r.y === PY0), iEnd = yrs.length - 1;
   const popBlock = !hasPop ? '' : block(`Population ${yrs[0].y} – ${PY1}`, `${compact(tot[iNow])} (${PY0}) → ${compact(tot[iEnd])} (${PY1}) residents`,
@@ -54,23 +52,36 @@ export function mountGrowth(el, ctx) {
     <div id="gr-text" class="explain"></div>
     <div id="gr-hex"></div>
     <div id="gr-built">
-      ${block('Across the study area', '', `<div class="note">Hotspots: ${Object.entries(D.hotspots).map(([k, v]) => `${esc(k)} ${v}`).join(' · ')}</div>`)}
+      <div id="gr-chart"></div>
       ${block(`Built-up reach by direction from ${D.focus.label}`, `Distance at which the built-up share drops below 50 %, ${y0} vs ${y1}`, radarHTML +
         `<div class="note">Longer arms = continuous city stretches further that way. The arms that grew most show where the city is pushing outward. “+” = still built-up at the edge of the study area. Shown on the map as rays.</div>` +
         dataTable(['Direction', `${y0} km`, `${y1} km`, 'change km'], growthRows))}
     </div>
     <div id="gr-pop" hidden>${popBlock}</div>`;
   const isPop = () => view === 'pop';
+  // ---- built-up graph that goes with each built-up view
+  const meanBu = (j) => { const a = H.map((h) => h.bu[j]).filter(Number.isFinite); return a.reduce((s, x) => s + x, 0) / (a.length || 1); };
+  const buSeries = Y.map((_, j) => meanBu(j));
+  const builtChart = () => {
+    if (view === 'hot') {
+      const cnt = [3, 2, 1, 0, -1, -2, -3].map((b) => ({ b, n: H.filter((h) => h.hotspot_bin === b).length }));
+      return block('Hexagons by growth hotspot class', `${int(H.length)} hexagons`, hbars(cnt.map((r) => ({ key: 'h' + r.b, label: HS_LABELS[r.b], value: r.n, text: int(r.n), color: HS_COLORS[r.b] })), { max: Math.max(...cnt.map((r) => r.n), 1) * 1.02 }));
+    }
+    if (view === 'fc') {
+      const T = F.target_year, xs = []; for (let y = Y[0]; y <= Math.max(T, Y.at(-1)); y++) xs.push(y);
+      const fcEnd = buSeries.at(-1) + H.reduce((a, h) => a + (Number.isFinite(h.fc_gain_pp) ? h.fc_gain_pp : 0), 0) / H.length / 100;
+      const actual = xs.map((y) => (Y.includes(y) ? buSeries[Y.indexOf(y)] : null)), fc = xs.map((y) => (y === Y.at(-1) ? buSeries.at(-1) : y === T ? fcEnd : null));
+      return block(`Built-up share, study area: ${Y[0]} → ${T}`, `Average of all hexagons · forecast ${pct(fcEnd)} in ${T}`, lineChart({ xs: xs.map(String), fmt: (x) => pct(x), yMin: null, cap: 1,
+        series: [{ name: 'Satellite land cover', short: 'actual', color: '#2a78d6', values: actual }, { name: 'Forecast', short: 'forecast', color: '#eb6834', dash: true, values: fc }] }));
+    }
+    return block(`Built-up share over time, study area`, `Average of all hexagons · ${pct(buSeries[0])} in ${Y[0]} → ${pct(buSeries.at(-1))} in ${Y.at(-1)}`,
+      lineChart({ xs: Y.map(String), fmt: (x) => pct(x), yMin: null, cap: 1, series: [{ name: 'Study area', short: 'built-up', color: '#2a78d6', values: buSeries }] }));
+  };
   const hexCard = () => {
     const box = el.querySelector('#gr-hex');
-    if (selHex == null) { box.innerHTML = '<div class="note">Click a hexagon on the map to see its details.</div>'; map.showRings(null); return; }
+    if (selHex == null) { box.innerHTML = isPop() ? '' : '<div class="note">Click a hexagon on the map to see how it and its rings changed.</div>'; map.showRings(null); return; }
     const h = H[selHex];
-    if (isPop()) {
-      map.showRings(null);
-      const rows = popRows(h.pp), mx = Math.max(1, ...rows.map((r) => r.value));
-      box.innerHTML = block('Selected hexagon', Number.isFinite(h.pop_proj) ? `${int(h.pop_base)} (${PY0}) → ${int(h.pop_proj)} (${PY1})` : '', hbars(rows, { max: mx * 1.02 }) + popLegend);
-      return;
-    }
+    if (isPop()) { map.showRings(null); box.innerHTML = ''; return; }
     const rg = ringsOf(selHex);
     map.showRings(selHex, rg);
     const rows = [{ key: 'own', label: 'This hexagon', value: h.built_change_pp, text: '+' + dec(h.built_change_pp) + ' pp' }];
@@ -82,7 +93,7 @@ export function mountGrowth(el, ctx) {
       Forecast to ${F.target_year}: <b>+${dec(h.fc_gain_pp)} pp</b> (likely range ${dec(h.fc_low_pp)}–${dec(h.fc_high_pp)} pp)</div>`);
   };
   const paint = () => {
-    el.querySelector('#gr-built').hidden = isPop(); el.querySelector('#gr-pop').hidden = !isPop();
+    el.querySelector('#gr-built').hidden = isPop(); el.querySelector('#gr-pop').hidden = !isPop(); if (!isPop()) el.querySelector('#gr-chart').innerHTML = builtChart();
     ctx.setLayers([{ key: 'hex', label: 'Hexagons' }, { key: 'malls', label: 'Malls' }, ...(isPop() ? [] : [{ key: 'edge', label: 'Built-up reach rays' }])]);
     ctx.setLegend(VIEWS[view].paint()); el.querySelector('#gr-text').innerHTML = VIEWS[view].text; hexCard();
   };

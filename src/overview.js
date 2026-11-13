@@ -2,6 +2,7 @@
 import { block, legendBar } from './ui.js';
 import { hbars, lineChart, stackRows, dataTable } from './charts.js';
 import { rampCss, GT_COLORS } from './map.js';
+import { on } from './state.js';
 import { int, dec, pct, inr, esc, short } from './format.js';
 
 export function mountOverview(el, ctx) {
@@ -33,21 +34,27 @@ export function mountOverview(el, ctx) {
     if (rows.length) catchHTML = block('People by drive time', 'Population inside the 10 / 20 / 30-minute drive areas', dataTable(['Drive time', ...[...new Set(rows.map((r) => r.scenario))]],
       [...new Set(rows.map((r) => r.minutes))].sort((a, b) => a - b).map((m) => [`${m} min`, ...[...new Set(rows.map((r) => r.scenario))].map((s) => int(rows.find((r) => r.minutes === m && r.scenario === s)?.pop))]), true));
   }
-  const T = P.tenant;
-  const tenHTML = T ? block('Tenant mix (fixed 0–100 scale)', 'From the mall’s own tenant list; not compared with other malls', `
-    <div class="hero-num"><span class="big">${dec(T.index_A, 0)}</span><span class="of">/ 100</span></div>
-    ${hbars(Object.entries(T.sub_scores).map(([k, val]) => ({ key: k, label: { diversity: 'Category variety', premium: 'Premium-brand share (vs 30 % benchmark)', anchors: 'Anchor coverage', quality: 'Rating quality' }[k] || k, value: val * 100, text: pct(val) })))}
-    <div class="note">${T.anchors ? 'Anchors: ' + Object.entries(T.anchors).map(([k, val]) => `${val ? '✓' : '✗'} ${esc(k)}`).join(' · ') : ''}</div>`) : '';
+  const tenFor = (id) => data.tenants?.malls?.[id] || (id === subj.id ? P.tenant : null);
+  const tenBlock = (id) => {
+    const T = tenFor(id), m = data.malls.malls.find((x) => x.id === id) || subj;
+    if (!T) return block('Tenant mix', esc(short(m.name)), '<div class="muted">Not available for this mall.</div>', false);
+    const anc = T.anchors || T.anchors_present;
+    return block(`Tenant mix · ${short(m.name)}`, 'Fixed 0–100 scale, from the mall’s own tenant list', `
+      <div class="hero-num"><span class="big">${dec(T.index_A, 0)}</span><span class="of">/ 100</span></div>
+      ${hbars(Object.entries(T.sub_scores).map(([k, val]) => ({ key: k, label: { diversity: 'Category variety', premium: 'Premium-brand share (vs 30 % benchmark)', anchors: 'Anchor coverage', quality: 'Rating quality' }[k] || k, value: val * 100, text: pct(val) })))}
+      <div class="note">${anc ? 'Anchors: ' + Object.entries(anc).map(([k, val]) => `${val ? '✓' : '✗'} ${esc(k)}`).join(' · ') : ''}</div>`);
+  };
   el.innerHTML = `
-    <div class="intro"><b>Descriptive study.</b> What the area around <b>${esc(subj.name)}</b> looks like and how it is changing. There is <b>no score and no ranking</b> here: other malls appear only as context (their median).</div>
+    <div class="intro"><b>${esc(subj.name)}</b> in detail: what the area around it looks like and how it is changing. Other malls appear as context (their median).</div>
     ${block('Inside the 15-minute drive area', 'Same yardstick for every mall: hexagons whose centre lies inside the drive area', facts)}
     ${block('How the area is growing', 'Share of the 15-minute area’s hexagons by growth type', stackRows([gtRow], { fmt: (x) => pct(x) }) + '<div class="note">Infill = filling gaps inside the city; edge = the city growing outward; leapfrog = detached new development (sprawl); frontier = open land surrounded by growth.</div>')}
     ${block('Built-up share over time, by drive time', 'Satellite land cover, pooled over each drive-time area', lineChart({ xs: Y.map(String), series: series('built'), fmt: (x) => pct(x), yMin: null, cap: 1 }))}
-    ${catchHTML}${tenHTML}`;
+    ${catchHTML}<div id="ov-tenant">${tenBlock(subj.id)}</div>`;
+  on('select', (id) => { el.querySelector('#ov-tenant').innerHTML = tenBlock(id); });
   return {
     activate() {
       map.setHexValues(data.hexes.map((h) => h.built_change_pp), { ramp: 'heat', domain: [0, Math.max(5, quantile(data.hexes.map((h) => h.built_change_pp), 0.97))] });
-      map.selectMall(subj); ctx.setLayers([{ key: 'hex', label: 'Hexagons' }, { key: 'malls', label: 'Malls' }, { key: 'saAll', label: '15-minute drive areas' }]);
+      map.selectMall(subj); ctx.setLayers([{ key: 'hex', label: 'Hexagons' }, { key: 'malls', label: 'Malls' }, { key: 'saAll', label: '15-minute drive areas', on: false }]);
       ctx.setLegend(legendBar(rampCss('heat'), '0 pp', '+' + dec(quantile(data.hexes.map((h) => h.built_change_pp), 0.97), 0) + ' pp', `Built-up growth ${data.city.early[0]}→${data.city.late.at(-1)} (blue outline: ${short(subj.name)}'s 15-min area)`));
     },
   };

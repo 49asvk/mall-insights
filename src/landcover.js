@@ -15,8 +15,7 @@ export function mountLandcover(el, ctx) {
     <div class="year-row"><calcite-button id="lc-play" scale="s" icon-start="play" appearance="outline">Play</calcite-button>
       <calcite-slider id="lc-year" min="${Y[0]}" max="${Y.at(-1)}" step="1" value="${Y.at(-1)}" ticks="1" label-ticks label="Year"></calcite-slider></div>
     <div id="lc-explain" class="note"></div>
-    ${block('Whole study area vs the mall’s areas', '', '<div id="lc-chart"></div>')}
-    ${block('By distance ring around the mall', 'Pixels of all hexagons whose centre lies within the ring', '<div id="lc-rings"></div>')}`;
+    ${block('Whole study area vs the mall’s areas', '', '<div id="lc-chart"></div>')}`;
   const explain = { bu: 'Share of the hexagon classified as built area in that year.' };
   const paint = () => {
     const vals = H.map((h) => (varName === 'bu' ? h.bu : h.mix)[yi]);
@@ -34,10 +33,6 @@ export function mountLandcover(el, ctx) {
       ...mins.map((m, k) => ({ name: `${short(fm?.name || '')} ${m}-min area`, short: `${m} min`, color: RC[k % RC.length], values: Y.map((y) => lb.find((r) => r.minutes === m && r.year === y)?.[key]) }))];
     el.querySelector('#lc-chart').innerHTML = `<div class="note">${esc(fm ? fm.name : '')}${data.city.mode === 'predictive' ? ' — pick another mall on the map or in the Ranking tab' : ''}</div>` +
       lineChart({ xs: Y.map(String), series, fmt: (x) => (varName === 'bu' ? pct(x) : dec(x, 2)), yMin: null, mark: yi, cap: 1 });
-    const R = data.land.malls[focusId];
-    if (R) el.querySelector('#lc-rings').innerHTML = lineChart({ xs: Y.map(String), mark: yi, yMin: null, cap: 1, fmt: (x) => (varName === 'bu' ? pct(x) : dec(x, 2)),
-      series: R.cumulative.map((r, k) => ({ name: `within ${r.ring_km} km${r.coverage < 0.9 ? ` (only ${pct(r.coverage)} of the ring inside the study area)` : ''}`, short: `${r.ring_km} km`, color: RC[k % RC.length], values: r.series.map((s) => s[key]) })) }) +
-      legend(R.cumulative.map((r, k) => ({ name: `≤ ${r.ring_km} km${r.coverage < 0.9 ? ' (partly outside study area)' : ''}`, color: RC[k % RC.length] })));
   };
   el.querySelector('#lc-year').addEventListener('calciteSliderInput', (e) => { yi = Y.indexOf(+e.target.value); paint(); });
   const play = el.querySelector('#lc-play');

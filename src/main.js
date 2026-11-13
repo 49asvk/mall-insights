@@ -24,6 +24,7 @@ import { CONFIG } from './config.js';
 import { loadAll, loadCities } from './data.js';
 import { createMap, HS_LABELS } from './map.js';
 import { mountOverview } from './overview.js';
+import { mountHome } from './home.js';
 import { mountRanking } from './ranking.js';
 import { mountLandcover } from './landcover.js';
 import { mountGrowth } from './growth.js';
@@ -64,7 +65,7 @@ document.addEventListener('mousemove', (e) => { const t = e.target.closest?.('[d
   // ---- tabs per mode
   const TABS = desc
     ? [['overview', subj ? short(subj.name) : 'Overview', mountOverview], ['landcover', 'Land cover', mountLandcover], ['growth', 'Growth', mountGrowth], ['opportunity', 'Opportunity', mountOpportunity], ['defs', 'Definitions', mountDefinitions]]
-    : [['ranking', 'Ranking', mountRanking], ['landcover', 'Land cover', mountLandcover], ['growth', 'Growth', mountGrowth], ['opportunity', 'Next mall', mountOpportunity], ['defs', 'Definitions', mountDefinitions]];
+    : [['ranking', 'Ranking', data.malls.profile ? mountHome : mountRanking], ['landcover', 'Land cover', mountLandcover], ['growth', 'Growth', mountGrowth], ['opportunity', 'Next mall', mountOpportunity], ['defs', 'Definitions', mountDefinitions]];
   const nav = $('#tab-nav'), tabs = $('#tabs');
   TABS.forEach(([k, label], n) => {
     const t = document.createElement('calcite-tab-title'); t.textContent = label; t.dataset.key = k; if (!n) t.selected = true; nav.appendChild(t);
